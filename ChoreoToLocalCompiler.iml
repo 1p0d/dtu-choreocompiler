@@ -11,7 +11,7 @@
     <orderEntry type="module-library">
       <library>
         <CLASSES>
-          <root url="jar://C:/Program Files/ANTLR/antlr-4.13.1-complete.jar!/" />
+          <root url="jar://C:/Program Files/ANTLR/antlr-4.13.2-complete.jar!/" />
         </CLASSES>
         <JAVADOC />
         <SOURCES />
