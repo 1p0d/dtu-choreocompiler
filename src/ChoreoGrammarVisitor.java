@@ -1,77 +1,86 @@
-import org.antlr.v4.runtime.Token;
-
+import java.util.ArrayList;
 import java.util.List;
 
-public class ChoreoGrammarVisitor extends ChoreoBaseVisitor<String> {
+public class ChoreoGrammarVisitor extends ChoreoBaseVisitor<AST> {
+    public static Environment env = new Environment();
     /* ---------- term ---------- */
 
     @Override
-    public String visitFunction(ChoreoParser.FunctionContext ctx) {
-        return ctx.f.getText() + "(" + visit(ctx.as) + ")";
+    public AST visitFunction(ChoreoParser.FunctionContext ctx) {
+        Arguments args = (Arguments) visit(ctx.as);
+        switch (ctx.f.getText()) {
+            case "crypt":
+                return new Crypt(args.getArguments().get(0), args.getArguments().get(1));
+            case "pair":
+        }
+        return new Function(ctx.f.getText(), (Arguments) visit(ctx.as));
     }
 
     @Override
-    public String visitVariable(ChoreoParser.VariableContext ctx) {
-        return ctx.x.getText();
+    public AST visitVariable(ChoreoParser.VariableContext ctx) {
+        return new Variable(ctx.x.getText());
     }
 
     @Override
-    public String visitMAC(ChoreoParser.MACContext ctx) {
-        return "[" + visit(ctx.m) + "]" + visit(ctx.k);
+    public AST visitMAC(ChoreoParser.MACContext ctx) {
+        return new MAC((Term) visit(ctx.m), (Term) visit(ctx.k));
     }
 
     @Override
-    public String visitTermParen(ChoreoParser.TermParenContext ctx) {
-        return "(" + visit(ctx.m) + ")";
+    public AST visitTermParen(ChoreoParser.TermParenContext ctx) {
+        return visit(ctx.m);
     }
 
     /* ---------- choreo ---------- */
 
     @Override
-    public String visitArguments(ChoreoParser.ArgumentsContext ctx) {
-        List<String> args = ctx.as.stream().map(this::visit).toList();
-        return String.join(",", args);
+    public AST visitArguments(ChoreoParser.ArgumentsContext ctx) {
+        List<Term> args = new ArrayList<>();
+        for (ChoreoParser.TermContext arc : ctx.as) {
+            args.add((Term) visit(arc));
+        }
+        return new Args(args);
     }
 
     /* ---------- choreo ---------- */
 
     @Override
-    public String visitEmpty(ChoreoParser.EmptyContext ctx) {
-        return "0";
+    public AST visitEmpty(ChoreoParser.EmptyContext ctx) {
+        return new Empty();
     }
 
     @Override
-    public String visitMessage(ChoreoParser.MessageContext ctx) {
-        return ctx.a.getText() + " -> " + ctx.b.getText() + ": " + (ctx.l != null ? "(" + ctx.l.getText() + ") " : "") + visit(ctx.ch);
+    public AST visitMessage(ChoreoParser.MessageContext ctx) {
+        return new Message(ctx.a.getText(), ctx.b.getText(), ctx.l.getText(), (Choice) visit(ctx.ch));
     }
 
     @Override
-    public String visitDefinition(ChoreoParser.DefinitionContext ctx) {
-        List<String> vars = ctx.vars.stream().map(Token::getText).toList();
-        return ctx.a.getText() + ": new " + String.join(",", vars) + ". " + visit(ctx.c);
+    public AST visitDefinition(ChoreoParser.DefinitionContext ctx) {
+        return new Definition(ctx.a.getText(), ctx.vars.stream().map(var -> new Variable(var.getText())).toList(), (Choreo) visit(ctx.c));
     }
 
     @Override
-    public String visitChoreoParen(ChoreoParser.ChoreoParenContext ctx) {
-        return "(" + visit(ctx.c) + ")";
+    public AST visitChoreoParen(ChoreoParser.ChoreoParenContext ctx) {
+        return visit(ctx.c);
     }
 
     /* ---------- cont ---------- */
 
     @Override
-    public String visitContinuation(ChoreoParser.ContinuationContext ctx) {
-        return visit(ctx.t) + (ctx.c != null ? ". " + visit(ctx.c) : "");
+    public AST visitContinuation(ChoreoParser.ContinuationContext ctx) {
+        return new Cont((Term) visit(ctx.t), (Choreo) visit(ctx.c));
     }
 
     /* ---------- choice ---------- */
 
     @Override
-    public String visitChoices(ChoreoParser.ChoicesContext ctx) {
-        return visit(ctx.co) + (ctx.ch != null ? " + " + visit(ctx.ch) : "");
+    public AST visitChoices(ChoreoParser.ChoicesContext ctx) {
+        return new Choice((Cont) visit(ctx.co), (Choice) visit(ctx.ch));
     }
 
     @Override
-    public String visitChoicesParen(ChoreoParser.ChoicesParenContext ctx) {
-        return "(" + visit(ctx.co) + (ctx.ch != null ? " + " + visit(ctx.ch) : "") + ")";
+    public AST visitChoicesParen(ChoreoParser.ChoicesParenContext ctx) {
+        // TODO: this prob wont work
+        return visitChoices((ChoreoParser.ChoicesContext) ctx.choice());
     }
 }
