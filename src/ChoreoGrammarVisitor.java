@@ -1,3 +1,5 @@
+import org.antlr.v4.runtime.Token;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -51,12 +53,19 @@ public class ChoreoGrammarVisitor extends ChoreoBaseVisitor<AST> {
 
     @Override
     public AST visitMessage(ChoreoParser.MessageContext ctx) {
+        env.addAgent(ctx.a.getText());
+        env.addAgent(ctx.b.getText());
+        if (ctx.l == null) return new Message(ctx.a.getText(), ctx.b.getText(), (Choice) visit(ctx.ch));
         return new Message(ctx.a.getText(), ctx.b.getText(), ctx.l.getText(), (Choice) visit(ctx.ch));
     }
 
     @Override
     public AST visitDefinition(ChoreoParser.DefinitionContext ctx) {
-        return new Definition(ctx.a.getText(), ctx.vars.stream().map(var -> new Variable(var.getText())).toList(), (Choreo) visit(ctx.c));
+        Definition def = new Definition(ctx.a.getText(), ctx.vars.stream().map(var -> new Variable(var.getText())).toList(), (Choreo) visit(ctx.c));
+        Frame frame = new Frame(def, ctx.a.getText(), ctx.vars.stream().map(Token::getText).toList());
+        env.addAgent(ctx.a.getText());
+        env.addFrame(frame);
+        return def;
     }
 
     @Override
@@ -68,6 +77,7 @@ public class ChoreoGrammarVisitor extends ChoreoBaseVisitor<AST> {
 
     @Override
     public AST visitContinuation(ChoreoParser.ContinuationContext ctx) {
+        if (ctx.c == null) return new Cont((Term) visit(ctx.t));
         return new Cont((Term) visit(ctx.t), (Choreo) visit(ctx.c));
     }
 
@@ -75,12 +85,13 @@ public class ChoreoGrammarVisitor extends ChoreoBaseVisitor<AST> {
 
     @Override
     public AST visitChoices(ChoreoParser.ChoicesContext ctx) {
+        if (ctx.ch == null) return new Choice((Cont) visit(ctx.co));
         return new Choice((Cont) visit(ctx.co), (Choice) visit(ctx.ch));
     }
 
     @Override
     public AST visitChoicesParen(ChoreoParser.ChoicesParenContext ctx) {
-        // TODO: this prob wont work
-        return visitChoices((ChoreoParser.ChoicesContext) ctx.choice());
+        if (ctx.ch == null) return new Choice((Cont) visit(ctx.co));
+        return new Choice((Cont) visit(ctx.co), (Choice) visit(ctx.ch));
     }
 }

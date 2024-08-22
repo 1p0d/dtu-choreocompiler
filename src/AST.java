@@ -96,7 +96,6 @@ class Args extends Arguments {
     }
 }
 
-
 abstract class Choreo extends AST {
     abstract public String compile(Environment env);
 }
@@ -121,8 +120,23 @@ class Definition extends Choreo {
 
     @Override
     public String compile(Environment env) {
-        // TODO: implement
-        return null;
+        StringBuilder sb = new StringBuilder();
+        sb.append(this.agent).append(" = ");
+        
+        // Compile variables
+        if (!this.variables.isEmpty()) {
+            sb.append("(");
+            for (int i = 0; i < this.variables.size(); i++) {
+                if (i > 0) sb.append(", ");
+                sb.append(this.variables.get(i).compile(env));
+            }
+            sb.append(") -> ");
+        }
+        
+        // Compile choreography
+        sb.append(this.choreography.compile(env));
+        
+        return sb.toString();
     }
 }
 
@@ -139,10 +153,30 @@ class Message extends Choreo {
         this.choice = choice;
     }
 
+    public Message(String agentFrom, String agentTo, Choice choice) {
+        this.agentFrom = agentFrom;
+        this.agentTo = agentTo;
+        this.choice = choice;
+    }
+
     @Override
     public String compile(Environment env) {
-        // TODO: implement
-        return null;
+        if (this.agentFrom.equals(this.agentTo)) {
+            error("Agent cannot send message to itself.");
+            return null;
+        }
+        StringBuilder sb = new StringBuilder();
+        if (env.getCurrentAgent().equals(agentFrom)) {
+            sb.append("send(").append(label).append(", ");
+            sb.append(choice.continuation.message.compile(env));
+            sb.append(").\n");
+        } else if (env.getCurrentAgent().equals(agentTo)) {
+            sb.append("receive(").append(label).append(").\n");
+            sb.append("if (verify(").append(choice.continuation.message.compile(env)).append(")) then\n");
+            sb.append("    ").append(choice.continuation.choreography.compile(env));
+            sb.append("else 0\n");
+        }
+        return sb.toString();
     }
 }
 
@@ -154,6 +188,10 @@ class Choice extends AST {
         this.continuation = continuation;
         this.nextChoice = nextChoice;
     }
+
+    public Choice(Cont continuation) {
+        this.continuation = continuation;
+    }
 }
 
 class Cont extends AST {
@@ -163,6 +201,10 @@ class Cont extends AST {
     public Cont(Term message, Choreo choreography) {
         this.message = message;
         this.choreography = choreography;
+    }
+
+    public Cont(Term message) {
+        this.message = message;
     }
 }
 

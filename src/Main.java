@@ -15,6 +15,7 @@ public class Main {
         ChoreoGrammarVisitor visitor = new ChoreoGrammarVisitor();
         AST ast = visitor.visit(tree);
         Environment env = ChoreoGrammarVisitor.env;
-        System.out.println(((Choreo) ast).compile(env));
+        env.compileAllFrames();
+        //System.out.println(((Choreo) ast).compile(env));
     }
 }
