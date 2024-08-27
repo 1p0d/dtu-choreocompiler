@@ -14,14 +14,17 @@ IDENT: [a-zA-Z][a-zA-Z0-9]* ;
 
 WS : [ \r\n\t] + -> skip ;
 
-term: f=IDENT '(' as=args ')' 						# Function
+start: ks+=knwl c=choreo EOF
+    ;
+
+knwl: a=IDENT ':' ts+=term (',' ts+=term)* '.' # Knowledge
+    ;
+
+term: f=IDENT '(' as+=term (',' as+=term)* ')' 		# Function
     | x=IDENT 										# Variable
     | '[' m=term ']' k=term 						# MAC
     | '(' m=term ')' 								# TermParen
     ;
-
-args: as+=term (',' as+=term)* 						# Arguments
-	;
 
 choreo
     : '0'											# Empty

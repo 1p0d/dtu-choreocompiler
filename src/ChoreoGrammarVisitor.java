@@ -1,21 +1,38 @@
-import org.antlr.v4.runtime.Token;
-
 import java.util.ArrayList;
 import java.util.List;
 
 public class ChoreoGrammarVisitor extends ChoreoBaseVisitor<AST> {
     public static Environment env = new Environment();
+
+    /* ---------- start ---------- */
+
+    public AST visitStart(ChoreoParser.StartContext ctx) {
+        visit(ctx.knwl);
+        return visit(ctx.c);
+    }
+
+    /* ---------- knwl ---------- */
+
+    public AST visitKnowledge(ChoreoParser.KnowledgeContext ctx) {
+        String agent = ctx.a.getText();
+        env.agents.add(agent);
+        List<Term> knowledge = new ArrayList<>();
+        for (ChoreoParser.TermContext c : ctx.ts) {
+            knowledge.add((Term) visit(c));
+        }
+        env.frames.add(new Frame(knowledge));
+        return null;
+    }
+
     /* ---------- term ---------- */
 
     @Override
     public AST visitFunction(ChoreoParser.FunctionContext ctx) {
-        Arguments args = (Arguments) visit(ctx.as);
-        switch (ctx.f.getText()) {
-            case "crypt":
-                return new Crypt(args.getArguments().get(0), args.getArguments().get(1));
-            case "pair":
+        List<Term> args = new ArrayList<>();
+        for (ChoreoParser.TermContext arc : ctx.as) {
+            args.add((Term) visit(arc));
         }
-        return new Function(ctx.f.getText(), (Arguments) visit(ctx.as));
+        return new Function(ctx.f.getText(), args);
     }
 
     @Override
@@ -25,23 +42,15 @@ public class ChoreoGrammarVisitor extends ChoreoBaseVisitor<AST> {
 
     @Override
     public AST visitMAC(ChoreoParser.MACContext ctx) {
-        return new MAC((Term) visit(ctx.m), (Term) visit(ctx.k));
+        List<Term> args = new ArrayList<>();
+        args.add((Term) visit(ctx.m));
+        args.add((Term) visit(ctx.k));
+        return new Function(RegisteredFunction.MAC.getName(), args);
     }
 
     @Override
     public AST visitTermParen(ChoreoParser.TermParenContext ctx) {
         return visit(ctx.m);
-    }
-
-    /* ---------- choreo ---------- */
-
-    @Override
-    public AST visitArguments(ChoreoParser.ArgumentsContext ctx) {
-        List<Term> args = new ArrayList<>();
-        for (ChoreoParser.TermContext arc : ctx.as) {
-            args.add((Term) visit(arc));
-        }
-        return new Args(args);
     }
 
     /* ---------- choreo ---------- */
@@ -53,19 +62,13 @@ public class ChoreoGrammarVisitor extends ChoreoBaseVisitor<AST> {
 
     @Override
     public AST visitMessage(ChoreoParser.MessageContext ctx) {
-        env.addAgent(ctx.a.getText());
-        env.addAgent(ctx.b.getText());
         if (ctx.l == null) return new Message(ctx.a.getText(), ctx.b.getText(), (Choice) visit(ctx.ch));
         return new Message(ctx.a.getText(), ctx.b.getText(), ctx.l.getText(), (Choice) visit(ctx.ch));
     }
 
     @Override
     public AST visitDefinition(ChoreoParser.DefinitionContext ctx) {
-        Definition def = new Definition(ctx.a.getText(), ctx.vars.stream().map(var -> new Variable(var.getText())).toList(), (Choreo) visit(ctx.c));
-        Frame frame = new Frame(def, ctx.a.getText(), ctx.vars.stream().map(Token::getText).toList());
-        env.addAgent(ctx.a.getText());
-        env.addFrame(frame);
-        return def;
+        return new Definition(ctx.a.getText(), ctx.vars.stream().map(var -> new Variable(var.getText())).toList(), (Choreo) visit(ctx.c));
     }
 
     @Override
