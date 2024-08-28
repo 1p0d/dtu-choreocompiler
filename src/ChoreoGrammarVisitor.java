@@ -45,7 +45,7 @@ public class ChoreoGrammarVisitor extends ChoreoBaseVisitor<AST> {
         List<Term> args = new ArrayList<>();
         args.add((Term) visit(ctx.m));
         args.add((Term) visit(ctx.k));
-        return new Function(RegisteredFunction.MAC.getName(), args);
+        return new Function(RegisteredFunction.MAC.name, args);
     }
 
     @Override
@@ -62,8 +62,12 @@ public class ChoreoGrammarVisitor extends ChoreoBaseVisitor<AST> {
 
     @Override
     public AST visitMessage(ChoreoParser.MessageContext ctx) {
-        if (ctx.l == null) return new Message(ctx.a.getText(), ctx.b.getText(), (Choice) visit(ctx.ch));
-        return new Message(ctx.a.getText(), ctx.b.getText(), ctx.l.getText(), (Choice) visit(ctx.ch));
+        List<Choice> choices = new ArrayList<>();
+        for (ChoreoParser.ChoiceContext ch : ctx.chs) {
+            choices.add((Choice) visit(ch));
+        }
+        if (ctx.l == null) return new Message(ctx.a.getText(), ctx.b.getText(), choices);
+        return new Message(ctx.a.getText(), ctx.b.getText(), choices, ctx.l.getText());
     }
 
     @Override
@@ -76,25 +80,16 @@ public class ChoreoGrammarVisitor extends ChoreoBaseVisitor<AST> {
         return visit(ctx.c);
     }
 
-    /* ---------- cont ---------- */
-
-    @Override
-    public AST visitContinuation(ChoreoParser.ContinuationContext ctx) {
-        if (ctx.c == null) return new Cont((Term) visit(ctx.t));
-        return new Cont((Term) visit(ctx.t), (Choreo) visit(ctx.c));
-    }
-
     /* ---------- choice ---------- */
 
     @Override
-    public AST visitChoices(ChoreoParser.ChoicesContext ctx) {
-        if (ctx.ch == null) return new Choice((Cont) visit(ctx.co));
-        return new Choice((Cont) visit(ctx.co), (Choice) visit(ctx.ch));
+    public AST visitContinuation(ChoreoParser.ContinuationContext ctx) {
+        if (ctx.c == null) return new Continuation((Term) visit(ctx.t));
+        return new Continuation((Term) visit(ctx.c), (Choreo) visit(ctx.c));
     }
 
     @Override
-    public AST visitChoicesParen(ChoreoParser.ChoicesParenContext ctx) {
-        if (ctx.ch == null) return new Choice((Cont) visit(ctx.co));
-        return new Choice((Cont) visit(ctx.co), (Choice) visit(ctx.ch));
+    public AST visitChoiceParen(ChoreoParser.ChoiceParenContext ctx) {
+        return visit(ctx.ch);
     }
 }
