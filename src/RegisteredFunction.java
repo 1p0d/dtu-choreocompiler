@@ -2,9 +2,11 @@ public enum RegisteredFunction {
     CRYPT("crypt"),
     SCRYPT("scrypt"),
     DCRYPT("dcrypt"),
+    DSCRYPT("dscrypt"),
     PAIR("pair"),
     MAC("mac"),
     INV("inv", false),
+    PK("pk"),
     HASH("h");
 
     final String name;

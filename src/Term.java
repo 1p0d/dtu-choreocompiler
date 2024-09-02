@@ -15,6 +15,11 @@ class Variable extends Term {
     public String compile(Environment env) {
         return x;
     }
+
+    @Override
+    public int hashCode() {
+        return x.hashCode();
+    }
 }
 
 class Function extends Term {
@@ -34,5 +39,10 @@ class Function extends Term {
         }
         stringBuilder.append(")");
         return stringBuilder.toString();
+    }
+
+    @Override
+    public int hashCode() {
+        return this.name.hashCode() + this.args.hashCode();
     }
 }

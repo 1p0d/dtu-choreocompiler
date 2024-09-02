@@ -14,20 +14,38 @@ public class Frame extends AST {
 
     public Frame(List<Term> knowledge) {
         this.knowledge = new HashMap<>();
-        for (int i = 0; i < knowledge.size(); i++) {
-            this.knowledge.put("l" + i, knowledge.get(i));
+        for (Term term : knowledge) {
+            this.knowledge.put(getLabel(term), term);
         }
     }
 
-    public void add(String key, Term term) {
-        this.knowledge.put(key, term);
+    public void addUnknown(Term term) {
+        String label = getLabel(term);
+        if (this.knowledge.containsKey(label)) return;
+        this.knowledge.put(label, term);
+        this.labelsNew.add(label);
+        if (term instanceof Function function && (function.name.equals(RegisteredFunction.PK.name) ||
+                function.name.equals(RegisteredFunction.INV.name))) {
+            this.labelsNew.addAll(this.labelsHold);
+            this.labelsHold.clear();
+        }
+    }
+
+    public void addKnown(Term term) {
+        String label = getLabel(term);
+        this.labelsNew.remove(label);
+        this.labelsHold.remove(label);
+        this.labelsDone.add(label);
+        if (this.knowledge.containsKey(label)) return;
+        this.knowledge.put(label, term);
     }
 
     public Term compose(Term term) {
-        // if agent knows about term, return knowledge entry
+        // if agent knows about term and term is checked, return known term
         for (Map.Entry<String, Term> entry : knowledge.entrySet()) {
+            String label = entry.getKey();
             Term knownTerm = entry.getValue();
-            if (knownTerm.equals(term)) {
+            if (knownTerm.equals(term) && this.labelsDone.contains(label)) {
                 return knownTerm;
             }
         }
@@ -46,7 +64,36 @@ public class Frame extends AST {
         return null;
     }
 
-    public void analyze() {
+    public void analyze() throws Exception {
+        // go through all new labels
+        while (!this.labelsNew.isEmpty()) {
+            String label = this.labelsNew.removeFirst();
+            Term term = this.knowledge.get(label);
+            // if term can be composed, continue
+            if (this.compose(term) != null) {
+                this.labelsDone.add(label);
+                continue;
+            }
+            // if term is function...
+            if (term instanceof Function function && (function.name.equals(RegisteredFunction.CRYPT.name) ||
+                    function.name.equals(RegisteredFunction.SCRYPT.name))) {
+                Term key = function.name.equals(RegisteredFunction.CRYPT.name) ?
+                        new Function(RegisteredFunction.INV.name, function.args.subList(0, 1)) : function.args.getFirst();
+                // if key can be composed, args can be decrypted and are added to knowledge
+                if (this.compose(key) != null) {
+                    for (Term arg : function.args.subList(1, function.args.size())) {
+                        this.addKnown(arg);
+                    }
+                    this.labelsDone.add(label);
+                } else {
+                    this.labelsHold.add(label);
+                }
+            } else throw new Exception("Frame contains non-composable term");
+        }
+    }
 
+    private String getLabel(Term term) {
+        // get label uniquely identifying term
+        return "" + term.hashCode();
     }
 }
