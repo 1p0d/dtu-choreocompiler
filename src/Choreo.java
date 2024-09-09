@@ -24,7 +24,15 @@ class Definition extends Choreo {
 
     @Override
     public String compile(Environment env) {
-        return null;
+        if (!env.currentAgent.equals(this.agent)) return null;
+        for (Variable variable : this.variables) {
+            env.frames.getFirst().addKnown(variable);
+        }
+        StringBuilder sb = new StringBuilder("var ");
+        for (Variable variable : this.variables) {
+            sb.append(variable.compile(env));
+        }
+        return sb.append(".").toString();
     }
 }
 
@@ -49,6 +57,15 @@ class Message extends Choreo {
 
     @Override
     public String compile(Environment env) {
+        if (env.currentAgent.equals(this.agentFrom)) {
+            StringBuilder sb = new StringBuilder();
+            for (Choice choice : this.choices) {
+                sb.append(choice.compile(env));
+            }
+            return sb.toString();
+        } else if (env.currentAgent.equals(this.agentTo)) {
+            return "receive(" + this.label + ").";
+        }
         return null;
     }
 }
