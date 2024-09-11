@@ -1,6 +1,6 @@
-A: sk(A,s), A,s,B, pk(B), msg, upd;
-s: sk(A,s), A,s,B, pk(B), msg, upd, pk(s), inv(pk(s));
-B: A,s,B, pk(B), inv(pk(B), pk(s), msg, upd;
+A: sk(A,s), A,s,B, pk(B), msg, udp.
+s: sk(A,s), A,s,B, pk(B), msg, udp, pk(s), inv(pk(s)).
+B: A,s,B, pk(B), inv(pk(B)), pk(s), msg, udp.
 
 (A: new M, K. A -> s: l
     ([crypt(pk(B),pair(msg,M))]sk(A,s).

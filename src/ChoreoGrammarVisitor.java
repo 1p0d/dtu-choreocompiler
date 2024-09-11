@@ -7,7 +7,9 @@ public class ChoreoGrammarVisitor extends ChoreoBaseVisitor<AST> {
     /* ---------- start ---------- */
 
     public AST visitStart(ChoreoParser.StartContext ctx) {
-        visit(ctx.knwl);
+        for (ChoreoParser.KnwlContext knowledge : ctx.ks) {
+            visit(knowledge);
+        }
         return visit(ctx.c);
     }
 
@@ -20,8 +22,9 @@ public class ChoreoGrammarVisitor extends ChoreoBaseVisitor<AST> {
         for (ChoreoParser.TermContext c : ctx.ts) {
             knowledge.add((Term) visit(c));
         }
-        env.frames.add(new Frame(knowledge));
-        return null;
+        Frame initialFrame = new Frame(knowledge);
+        env.frames.add(initialFrame);
+        return initialFrame;
     }
 
     /* ---------- term ---------- */
@@ -85,7 +88,7 @@ public class ChoreoGrammarVisitor extends ChoreoBaseVisitor<AST> {
     @Override
     public AST visitContinuation(ChoreoParser.ContinuationContext ctx) {
         if (ctx.c == null) return new Continuation((Term) visit(ctx.t));
-        return new Continuation((Term) visit(ctx.c), (Choreo) visit(ctx.c));
+        return new Continuation((Term) visit(ctx.t), (Choreo) visit(ctx.c));
     }
 
     @Override

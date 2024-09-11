@@ -14,7 +14,7 @@ IDENT: [a-zA-Z][a-zA-Z0-9]* ;
 
 WS : [ \r\n\t] + -> skip ;
 
-start: ks+=knwl c=choreo EOF
+start: ks+=knwl+ c=choreo EOF
     ;
 
 knwl: a=IDENT ':' ts+=term (',' ts+=term)* '.'                              # Knowledge

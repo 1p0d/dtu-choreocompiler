@@ -24,15 +24,17 @@ class Definition extends Choreo {
 
     @Override
     public String compile(Environment env) {
-        if (!env.currentAgent.equals(this.agent)) return null;
+        if (!env.currentAgent.equals(this.agent)) return this.choreography.compile(env);
         for (Variable variable : this.variables) {
             env.frames.getFirst().addKnown(variable);
         }
-        StringBuilder sb = new StringBuilder("var ");
+        StringBuilder sb = new StringBuilder();
         for (Variable variable : this.variables) {
+            sb.append("var ");
             sb.append(variable.compile(env));
+            sb.append(".\n");
         }
-        return sb.append(".").toString();
+        return sb.append(this.choreography.compile(env)).toString();
     }
 }
 
@@ -66,6 +68,6 @@ class Message extends Choreo {
         } else if (env.currentAgent.equals(this.agentTo)) {
             return "receive(" + this.label + ").";
         }
-        return null;
+        return "";
     }
 }

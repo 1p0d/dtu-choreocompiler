@@ -19,11 +19,7 @@ class Continuation extends Choice {
     public String compile(Environment env) {
         Frame frame = env.frames.getFirst();
         frame.addUnknown(this.message);
-        try {
-            frame.analyze();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        frame.analyze();
         return "send(" + this.message.compile(env) + ").\n" +
                 (this.choreography != null ? this.choreography.compile(env) : "");
     }

@@ -1,3 +1,4 @@
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -14,9 +15,11 @@ public class Frame extends AST {
 
     public Frame(List<Term> knowledge) {
         this.knowledge = new HashMap<>();
-        for (Term term : knowledge) {
-            this.knowledge.put(getLabel(term), term);
-        }
+        this.recipes = new HashMap<>();
+        this.labelsNew = new ArrayList<>();
+        this.labelsHold = new ArrayList<>();
+        this.labelsDone = new ArrayList<>();
+        for (Term term : knowledge) this.addKnown(term);
     }
 
     public void addUnknown(Term term) {
@@ -41,10 +44,13 @@ public class Frame extends AST {
     }
 
     public Term compose(Term term) {
+//        System.out.println(this.knowledge.values().stream().map(t -> t.compile(ChoreoGrammarVisitor.env)).collect(Collectors.joining(", ")));
+//        System.out.println("compose: " + term.compile(ChoreoGrammarVisitor.env));
         // if agent knows about term and term is checked, return known term
         for (Map.Entry<String, Term> entry : knowledge.entrySet()) {
             String label = entry.getKey();
             Term knownTerm = entry.getValue();
+//            System.out.println(term.compile(ChoreoGrammarVisitor.env) + " (" + term + ")" + " == " + knownTerm.compile(ChoreoGrammarVisitor.env) + " (" + knownTerm + ")" + "? " + (knownTerm.equals(term) ? "true" : "false"));
             if (knownTerm.equals(term) && this.labelsDone.contains(label)) {
                 return knownTerm;
             }
@@ -64,7 +70,7 @@ public class Frame extends AST {
         return null;
     }
 
-    public void analyze() throws Exception {
+    public void analyze() {
         // go through all new labels
         while (!this.labelsNew.isEmpty()) {
             String label = this.labelsNew.removeFirst();
@@ -88,7 +94,7 @@ public class Frame extends AST {
                 } else {
                     this.labelsHold.add(label);
                 }
-            } else throw new Exception("Frame contains non-composable term");
+            } else error("Frame contains non-composable term " + term.compile(ChoreoGrammarVisitor.env));
         }
     }
 

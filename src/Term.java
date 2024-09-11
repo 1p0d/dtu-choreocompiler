@@ -17,6 +17,14 @@ class Variable extends Term {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Variable variable = (Variable) o;
+        return x.equals(variable.x);
+    }
+
+    @Override
     public int hashCode() {
         return x.hashCode();
     }
@@ -34,11 +42,21 @@ class Function extends Term {
     @Override
     public String compile(Environment env) {
         StringBuilder stringBuilder = new StringBuilder(this.name + "(");
-        for (Term arg : this.args) {
-            stringBuilder.append(arg.compile(env));
+        for (int i = 0; i < this.args.size(); i++) {
+            stringBuilder.append(this.args.get(i).compile(env));
+            if (i < this.args.size() - 1) stringBuilder.append(",");
         }
         stringBuilder.append(")");
         return stringBuilder.toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Function function = (Function) o;
+        if (!name.equals(function.name)) return false;
+        return args.equals(function.args);
     }
 
     @Override
