@@ -2,6 +2,9 @@ import java.util.List;
 
 public abstract class Term extends AST {
     abstract public String compile(Environment env);
+
+    abstract public Term getKey();
+    abstract public Term getContent();
 }
 
 class Variable extends Term {
@@ -17,11 +20,21 @@ class Variable extends Term {
     }
 
     @Override
+    public Term getKey() {
+        return null;
+    }
+
+    @Override
+    public Term getContent() {
+        return null;
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Variable variable = (Variable) o;
-        return x.equals(variable.x);
+        return this.x.equals(variable.x);
     }
 
     @Override
@@ -51,12 +64,26 @@ class Function extends Term {
     }
 
     @Override
+    public Term getKey() {
+        if (List.of(RegisteredFunction.CRYPT.name, RegisteredFunction.SCRYPT.name, RegisteredFunction.SIGN.name).contains(this.name))
+            return this.name.equals(RegisteredFunction.CRYPT.name) ? new Function(RegisteredFunction.INV.name, this.args.subList(0, 1)) : this.args.getFirst();
+        return null;
+    }
+
+    @Override
+    public Term getContent() {
+        if (List.of(RegisteredFunction.CRYPT.name, RegisteredFunction.SCRYPT.name, RegisteredFunction.SIGN.name).contains(this.name))
+            return this.args.get(1);
+        return null;
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Function function = (Function) o;
-        if (!name.equals(function.name)) return false;
-        return args.equals(function.args);
+        if (!this.name.equals(function.name)) return false;
+        return this.args.equals(function.args);
     }
 
     @Override

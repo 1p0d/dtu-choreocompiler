@@ -12,6 +12,7 @@ public class Frame extends AST {
     List<String> labelsNew;
     List<String> labelsHold;
     List<String> labelsDone;
+    Integer counter;
 
     public Frame(List<Term> knowledge) {
         this.knowledge = new HashMap<>();
@@ -19,53 +20,42 @@ public class Frame extends AST {
         this.labelsNew = new ArrayList<>();
         this.labelsHold = new ArrayList<>();
         this.labelsDone = new ArrayList<>();
-        for (Term term : knowledge) this.addKnown(term);
+        this.counter = 0;
+        for (Term term : knowledge) this.add(term);
     }
 
-    public void addUnknown(Term term) {
-        String label = getLabel(term);
-        if (this.knowledge.containsKey(label)) return;
-        this.knowledge.put(label, term);
+    public void add(Term term) {
+        String label = getLabel();
         this.labelsNew.add(label);
-        if (term instanceof Function function && (function.name.equals(RegisteredFunction.PK.name) ||
-                function.name.equals(RegisteredFunction.INV.name))) {
-            this.labelsNew.addAll(this.labelsHold);
-            this.labelsHold.clear();
-        }
+        this.knowledge.put(label, term);
     }
 
-    public void addKnown(Term term) {
-        String label = getLabel(term);
-        this.labelsNew.remove(label);
-        this.labelsHold.remove(label);
-        this.labelsDone.add(label);
+    public void add(Term term, String label) {
         if (this.knowledge.containsKey(label)) return;
+        this.labelsNew.add(label);
         this.knowledge.put(label, term);
     }
 
     public Term compose(Term term) {
-//        System.out.println(this.knowledge.values().stream().map(t -> t.compile(ChoreoGrammarVisitor.env)).collect(Collectors.joining(", ")));
-//        System.out.println("compose: " + term.compile(ChoreoGrammarVisitor.env));
         // if agent knows about term and term is checked, return known term
         for (Map.Entry<String, Term> entry : knowledge.entrySet()) {
             String label = entry.getKey();
             Term knownTerm = entry.getValue();
-//            System.out.println(term.compile(ChoreoGrammarVisitor.env) + " (" + term + ")" + " == " + knownTerm.compile(ChoreoGrammarVisitor.env) + " (" + knownTerm + ")" + "? " + (knownTerm.equals(term) ? "true" : "false"));
-            if (knownTerm.equals(term) && this.labelsDone.contains(label)) {
-                return knownTerm;
-            }
+            if (knownTerm.equals(term) && this.labelsDone.contains(label))
+                return new Variable(label);
         }
         if (term instanceof Function function) {
             // if function is not globally callable and agent does not know the term, the agent is not allowed to compose
             if (!RegisteredFunction.isGlobal(function.name)) return null;
+            List<Term> composedArgLabels = new ArrayList<>();
             // if one of the functions' args cannot be composed, the function cannot be composed
             for (Term arg : function.args) {
-                if (compose(arg) == null) {
-                    return null;
-                }
+                Term composedArgLabel = compose(arg);
+                if (composedArgLabel == null) return null;
+                composedArgLabels.add(composedArgLabel);
             }
             // if all functions' args can be composed, the function can be composed
-            return term;
+            return new Function(function.name, composedArgLabels);
         }
         return null;
     }
@@ -80,26 +70,26 @@ public class Frame extends AST {
                 this.labelsDone.add(label);
                 continue;
             }
-            // if term is function...
-            if (term instanceof Function function && (function.name.equals(RegisteredFunction.CRYPT.name) ||
-                    function.name.equals(RegisteredFunction.SCRYPT.name))) {
-                Term key = function.name.equals(RegisteredFunction.CRYPT.name) ?
-                        new Function(RegisteredFunction.INV.name, function.args.subList(0, 1)) : function.args.getFirst();
-                // if key can be composed, args can be decrypted and are added to knowledge
-                if (this.compose(key) != null) {
-                    for (Term arg : function.args.subList(1, function.args.size())) {
-                        this.addKnown(arg);
-                    }
+            // if term is keyed function...
+            if (term instanceof Function function &&
+                    (function.name.equals(RegisteredFunction.CRYPT.name) ||
+                    function.name.equals(RegisteredFunction.SCRYPT.name) ||
+                    function.name.equals(RegisteredFunction.SIGN.name))) {
+                // if key can be composed
+                Term keyLabel = this.compose(function.getKey());
+                if (keyLabel != null) {
+                    this.labelsNew.addAll(this.labelsHold);
+                    this.labelsHold.clear();
                     this.labelsDone.add(label);
                 } else {
                     this.labelsHold.add(label);
                 }
-            } else error("Frame contains non-composable term " + term.compile(ChoreoGrammarVisitor.env));
+            }
         }
     }
 
-    private String getLabel(Term term) {
+    private String getLabel() {
         // get label uniquely identifying term
-        return "" + term.hashCode();
+        return this.counter++ + "";
     }
 }

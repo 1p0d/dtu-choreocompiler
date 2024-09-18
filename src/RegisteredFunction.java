@@ -1,13 +1,16 @@
+import java.util.List;
+
 public enum RegisteredFunction {
     CRYPT("crypt"),
-    SCRYPT("scrypt"),
     DCRYPT("dcrypt"),
     DSCRYPT("dscrypt"),
-    PAIR("pair"),
-    MAC("mac"),
+    HASH("h"),
     INV("inv", false),
+    MAC("mac"),
+    PAIR("pair"),
     PK("pk"),
-    HASH("h");
+    SCRYPT("scrypt"),
+    SIGN("sign");
 
     final String name;
     final boolean global;
