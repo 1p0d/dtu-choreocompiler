@@ -4,7 +4,7 @@ public abstract class Term extends AST {
     abstract public String compile(Environment env);
 
     abstract public Term getKey();
-    abstract public Term getContent();
+    abstract public List<Term> getContent();
 }
 
 class Variable extends Term {
@@ -25,7 +25,7 @@ class Variable extends Term {
     }
 
     @Override
-    public Term getContent() {
+    public List<Term> getContent() {
         return null;
     }
 
@@ -65,15 +65,18 @@ class Function extends Term {
 
     @Override
     public Term getKey() {
-        if (List.of(RegisteredFunction.CRYPT.name, RegisteredFunction.SCRYPT.name, RegisteredFunction.SIGN.name).contains(this.name))
+        if (RegisteredFunction.KEYED_FUNCTIONS.contains(RegisteredFunction.getRegisteredFunction(this.name)))
             return this.name.equals(RegisteredFunction.CRYPT.name) ? new Function(RegisteredFunction.INV.name, this.args.subList(0, 1)) : this.args.getFirst();
         return null;
     }
 
     @Override
-    public Term getContent() {
-        if (List.of(RegisteredFunction.CRYPT.name, RegisteredFunction.SCRYPT.name, RegisteredFunction.SIGN.name).contains(this.name))
-            return this.args.get(1);
+    public List<Term> getContent() {
+        RegisteredFunction registeredFunction = RegisteredFunction.getRegisteredFunction(this.name);
+        if (RegisteredFunction.KEYED_FUNCTIONS.contains(registeredFunction))
+            return List.of(this.args.get(1));
+        if (registeredFunction != null && registeredFunction.analyzable)
+            return this.args;
         return null;
     }
 

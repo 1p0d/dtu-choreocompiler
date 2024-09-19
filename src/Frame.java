@@ -1,7 +1,4 @@
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class Frame extends AST {
     // Map from labels to known terms
@@ -24,16 +21,17 @@ public class Frame extends AST {
         for (Term term : knowledge) this.add(term);
     }
 
-    public void add(Term term) {
-        String label = getLabel();
-        this.labelsNew.add(label);
-        this.knowledge.put(label, term);
-    }
-
     public void add(Term term, String label) {
         if (this.knowledge.containsKey(label)) return;
         this.labelsNew.add(label);
         this.knowledge.put(label, term);
+        this.labelsNew.addAll(this.labelsHold);
+        this.labelsHold.clear();
+    }
+
+    public void add(Term term) {
+        String label = getLabel();
+        this.add(term, label);
     }
 
     public Term compose(Term term) {
@@ -47,15 +45,15 @@ public class Frame extends AST {
         if (term instanceof Function function) {
             // if function is not globally callable and agent does not know the term, the agent is not allowed to compose
             if (!RegisteredFunction.isGlobal(function.name)) return null;
-            List<Term> composedArgLabels = new ArrayList<>();
+            List<Term> composedArgs = new ArrayList<>();
             // if one of the functions' args cannot be composed, the function cannot be composed
             for (Term arg : function.args) {
-                Term composedArgLabel = compose(arg);
-                if (composedArgLabel == null) return null;
-                composedArgLabels.add(composedArgLabel);
+                Term composedArg = compose(arg);
+                if (composedArg == null) return null;
+                composedArgs.add(composedArg);
             }
             // if all functions' args can be composed, the function can be composed
-            return new Function(function.name, composedArgLabels);
+            return new Function(function.name, composedArgs);
         }
         return null;
     }
@@ -65,21 +63,16 @@ public class Frame extends AST {
         while (!this.labelsNew.isEmpty()) {
             String label = this.labelsNew.removeFirst();
             Term term = this.knowledge.get(label);
-            // if term can be composed, continue
-            if (this.compose(term) != null) {
+            // if term is variable, continue
+            if (!(term instanceof Function function)) {
                 this.labelsDone.add(label);
                 continue;
             }
             // if term is keyed function...
-            if (term instanceof Function function &&
-                    (function.name.equals(RegisteredFunction.CRYPT.name) ||
-                    function.name.equals(RegisteredFunction.SCRYPT.name) ||
-                    function.name.equals(RegisteredFunction.SIGN.name))) {
+            if (RegisteredFunction.KEYED_FUNCTIONS.contains(RegisteredFunction.getRegisteredFunction(function.name))) {
                 // if key can be composed
-                Term keyLabel = this.compose(function.getKey());
-                if (keyLabel != null) {
-                    this.labelsNew.addAll(this.labelsHold);
-                    this.labelsHold.clear();
+                if (this.compose(function.getKey()) != null) {
+                    for (Term arg : function.getContent()) this.add(arg);
                     this.labelsDone.add(label);
                 } else {
                     this.labelsHold.add(label);

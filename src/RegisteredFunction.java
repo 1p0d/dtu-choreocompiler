@@ -1,36 +1,44 @@
 import java.util.List;
 
 public enum RegisteredFunction {
-    CRYPT("crypt"),
-    DCRYPT("dcrypt"),
-    DSCRYPT("dscrypt"),
-    HASH("h"),
-    INV("inv", false),
-    MAC("mac"),
-    PAIR("pair"),
-    PK("pk"),
-    SCRYPT("scrypt"),
-    SIGN("sign");
+    CRYPT(  "crypt",    "vcrypt",   "dcrypt",   true,   true,   true),
+    SCRYPT( "scrypt",   "vscrypt",  "dscrypt",  true,   true,   true),
+    SIGN(   "sign",     "vsign",    "open",     true,   true,   true),
+    PAIR(   "pair",     "vpair",    "π",        true,   true,   false),
+    HASH(   "h",        "h",        null,       true,   false,  false),
+    MAC(    "mac",      "mac",      null,       true,   false,  true),
+    PK(     "pk",       null,       null,       true,   false,  false),
+    INV(    "inv",      null,       null,       false,  false,  false);
 
     final String name;
+    final String verifier;
+    final String destructor;
     final boolean global;
+    final boolean analyzable;
+    final boolean keyed;
 
-    RegisteredFunction(String name, boolean global) {
+    static final List<RegisteredFunction> KEYED_FUNCTIONS = List.of(CRYPT, SCRYPT, SIGN);
+
+    RegisteredFunction(String name, String verifier, String destructor, boolean global, boolean analyzable, boolean keyed) {
         this.name = name;
+        this.verifier = verifier;
+        this.destructor = destructor;
+        this.analyzable = analyzable;
         this.global = global;
+        this.keyed = keyed;
     }
 
-    RegisteredFunction(String name) {
-        this.name = name;
-        this.global = true;
+    static RegisteredFunction getRegisteredFunction(String name) {
+        for (RegisteredFunction registeredFunction : RegisteredFunction.values()) {
+            if (registeredFunction.name.equals(name)) {
+                return registeredFunction;
+            }
+        }
+        return null;
     }
 
     static boolean isGlobal(String name) {
-        for (RegisteredFunction r : RegisteredFunction.values()) {
-            if (r.name.equals(name)) {
-                return r.global;
-            }
-        }
-        return false;
+        RegisteredFunction registeredFunction = getRegisteredFunction(name);
+        return registeredFunction != null && registeredFunction.global;
     }
 }
