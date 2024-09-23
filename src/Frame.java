@@ -1,3 +1,5 @@
+import org.antlr.v4.runtime.misc.Pair;
+
 import java.util.*;
 
 public class Frame extends AST {
@@ -39,8 +41,7 @@ public class Frame extends AST {
         for (Map.Entry<String, Term> entry : knowledge.entrySet()) {
             String label = entry.getKey();
             Term knownTerm = entry.getValue();
-            if (knownTerm.equals(term) && this.labelsDone.contains(label))
-                return new Variable(label);
+            if (knownTerm.equals(term) && this.labelsDone.contains(label)) return new Variable(label);
         }
         if (term instanceof Function function) {
             // if function is not globally callable and agent does not know the term, the agent is not allowed to compose
@@ -58,27 +59,36 @@ public class Frame extends AST {
         return null;
     }
 
-    public void analyze() {
+    public List<Pair<Term, Term>> analyze() {
+        List<Pair<Term, Term>> checks = new ArrayList<>();
         // go through all new labels
         while (!this.labelsNew.isEmpty()) {
             String label = this.labelsNew.removeFirst();
             Term term = this.knowledge.get(label);
-            // if term is variable, continue
+            // if term is not a function, continue
             if (!(term instanceof Function function)) {
                 this.labelsDone.add(label);
                 continue;
             }
-            // if term is keyed function...
-            if (RegisteredFunction.KEYED_FUNCTIONS.contains(RegisteredFunction.getRegisteredFunction(function.name))) {
-                // if key can be composed
-                if (this.compose(function.getKey()) != null) {
-                    for (Term arg : function.getContent()) this.add(arg);
-                    this.labelsDone.add(label);
-                } else {
-                    this.labelsHold.add(label);
-                }
+            // if function is not registered, continue
+            RegisteredFunction registeredFunction = RegisteredFunction.getRegisteredFunction(function.name);
+            if (registeredFunction == null) continue;
+            // if function is keyed but key cannot be composed, continue
+            if (RegisteredFunction.KEYED_FUNCTIONS.contains(registeredFunction) && this.compose(function.getKey()) == null) {
+                this.labelsHold.add(label);
+                continue;
             }
+            // if function is analyzable, add args to frame
+            if (registeredFunction.analyzable) {
+                for (Term arg : function.getContent())
+                    this.add(arg);
+            }
+            if (registeredFunction.verifier != null) {
+                checks.add(new Pair<>(new Variable(label), new Function(registeredFunction.verifier, function.args)));
+            }
+            this.labelsDone.add(label);
         }
+        return checks;
     }
 
     private String getLabel() {

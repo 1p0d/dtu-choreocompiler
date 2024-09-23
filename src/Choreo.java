@@ -26,7 +26,7 @@ class Definition extends Choreo {
     public String compile(Environment env) {
         if (!env.currentAgent.equals(this.agent)) return this.choreography.compile(env);
         for (Variable variable : this.variables) {
-            env.frames.getFirst().addKnown(variable);
+            env.frames.getFirst().add(variable);
         }
         StringBuilder sb = new StringBuilder();
         for (Variable variable : this.variables) {

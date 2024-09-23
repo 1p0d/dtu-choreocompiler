@@ -18,13 +18,13 @@ public class ChoreoGrammarVisitor extends ChoreoBaseVisitor<AST> {
     public AST visitKnowledge(ChoreoParser.KnowledgeContext ctx) {
         String agent = ctx.a.getText();
         env.agents.add(agent);
-        List<Term> knowledge = new ArrayList<>();
+        List<Term> terms = new ArrayList<>();
         for (ChoreoParser.TermContext c : ctx.ts) {
-            knowledge.add((Term) visit(c));
+            terms.add((Term) visit(c));
         }
-        Frame initialFrame = new Frame(knowledge);
+        Frame initialFrame = new Frame(terms);
         env.frames.add(initialFrame);
-        return initialFrame;
+        return new AgentKnowledge(agent, terms);
     }
 
     /* ---------- term ---------- */
