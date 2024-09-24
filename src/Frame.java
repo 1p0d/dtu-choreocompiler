@@ -1,4 +1,5 @@
 import org.antlr.v4.runtime.misc.Pair;
+import org.antlr.v4.runtime.misc.Triple;
 
 import java.util.*;
 
@@ -59,8 +60,8 @@ public class Frame extends AST {
         return null;
     }
 
-    public List<Pair<Term, Term>> analyze() {
-        List<Pair<Term, Term>> checks = new ArrayList<>();
+    public List<Triple<Term, Term, Term>> analyze() {
+        List<Triple<Term, Term, Term>> checks = new ArrayList<>();
         // go through all new labels
         while (!this.labelsNew.isEmpty()) {
             String label = this.labelsNew.removeFirst();
@@ -84,7 +85,8 @@ public class Frame extends AST {
                     this.add(arg);
             }
             if (registeredFunction.verifier != null) {
-                checks.add(new Pair<>(new Variable(label), new Function(registeredFunction.verifier, function.args)));
+                checks.add(new Triple<>(new Variable(label), new Function(registeredFunction.verifier, function.args),
+                        registeredFunction.destructor != null ? new Function(registeredFunction.destructor, function.args) : null));
             }
             this.labelsDone.add(label);
         }
