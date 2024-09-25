@@ -1,4 +1,3 @@
-import org.antlr.v4.runtime.misc.Pair;
 import org.antlr.v4.runtime.misc.Triple;
 
 import java.util.*;
@@ -94,7 +93,6 @@ public class Frame extends AST {
     }
 
     private String getLabel() {
-        // get label uniquely identifying term
-        return this.counter++ + "";
+        return "l" + this.counter++;
     }
 }
