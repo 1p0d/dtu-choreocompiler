@@ -1,5 +1,4 @@
 import org.antlr.v4.runtime.misc.Pair;
-import org.antlr.v4.runtime.misc.Triple;
 
 import java.util.*;
 
@@ -24,17 +23,18 @@ public class Frame extends AST {
         for (Term term : knowledge) this.add(term);
     }
 
-    public void add(Term term, String label) {
-        if (this.knowledge.containsKey(label)) return;
+    public String add(Term term, String label) {
+        if (this.knowledge.containsKey(label)) return this.knowledge.get(label).toString();
         this.labelsNew.add(label);
         this.knowledge.put(label, term);
         this.labelsNew.addAll(this.labelsHold);
         this.labelsHold.clear();
+        return label;
     }
 
-    public void add(Term term) {
+    public String add(Term term) {
         String label = getLabel();
-        this.add(term, label);
+        return this.add(term, label);
     }
 
     public Term compose(Term term) {
@@ -60,8 +60,8 @@ public class Frame extends AST {
         return null;
     }
 
-    public List<Triple<Term, Term, Term>> analyze() {
-        List<Triple<Term, Term, Term>> checks = new ArrayList<>();
+    public List<Pair<Term, Term>> analyze() {
+        List<Pair<Term, Term>> checks = new ArrayList<>();
         // go through all new labels
         while (!this.labelsNew.isEmpty()) {
             String label = this.labelsNew.removeFirst();
@@ -73,20 +73,26 @@ public class Frame extends AST {
             }
             // if function is not registered, continue
             RegisteredFunction registeredFunction = RegisteredFunction.getRegisteredFunction(function.name);
-            if (registeredFunction == null) continue;
+            if (registeredFunction == null) {
+                this.labelsDone.add(label);
+                continue;
+            }
             // if function is keyed but key cannot be composed, continue
             if (RegisteredFunction.KEYED_FUNCTIONS.contains(registeredFunction) && this.compose(function.getKey()) == null) {
                 this.labelsHold.add(label);
                 continue;
             }
+            List<String> argLabels = new ArrayList<>();
             // if function is analyzable, add args to frame
             if (registeredFunction.analyzable) {
                 for (Term arg : function.getContent())
-                    this.add(arg);
+                    argLabels.add(this.add(arg));
             }
-            if (registeredFunction.verifier != null) {
-                checks.add(new Triple<>(new Variable(label), new Function(registeredFunction.verifier, function.args),
-                        registeredFunction.destructor != null ? new Function(registeredFunction.destructor, function.args) : null));
+            if (registeredFunction.equals(RegisteredFunction.PAIR)) {
+                for (int i = 0; i < function.getContent().size(); i++)
+                    checks.add(new Pair<>(new Variable(argLabels.get(i)), new Function(registeredFunction.destructor, List.of(function.getContent().get(i)))));
+            } else {
+                checks.add(new Pair<>(new Variable(label), new Function(registeredFunction.destructor, function.args)));
             }
             this.labelsDone.add(label);
         }
