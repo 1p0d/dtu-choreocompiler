@@ -1,3 +1,5 @@
+import org.antlr.v4.runtime.misc.Pair;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -7,24 +9,23 @@ public class ChoreoGrammarVisitor extends ChoreoBaseVisitor<AST> {
     /* ---------- start ---------- */
 
     public AST visitStart(ChoreoParser.StartContext ctx) {
-        for (ChoreoParser.KnwlContext knowledge : ctx.ks) {
-            visit(knowledge);
+        Choreo choreo = (Choreo) visit(ctx.c);
+        for (ChoreoParser.KnwlContext knwl : ctx.ks) {
+            Knowledge knowledge = (Knowledge) visit(knwl);
+            env.agentFrames.put(knowledge.agent, List.of(new Pair<>(new Frame(knowledge.knowledge), choreo)));
         }
-        return visit(ctx.c);
+        return new Start();
     }
 
     /* ---------- knwl ---------- */
 
     public AST visitKnowledge(ChoreoParser.KnowledgeContext ctx) {
         String agent = ctx.a.getText();
-        env.agents.add(agent);
         List<Term> terms = new ArrayList<>();
         for (ChoreoParser.TermContext c : ctx.ts) {
             terms.add((Term) visit(c));
         }
-        Frame initialFrame = new Frame(terms);
-        env.frames.add(initialFrame);
-        return new AgentKnowledge(agent, terms);
+        return new Knowledge(agent, terms);
     }
 
     /* ---------- term ---------- */
@@ -87,8 +88,8 @@ public class ChoreoGrammarVisitor extends ChoreoBaseVisitor<AST> {
 
     @Override
     public AST visitContinuation(ChoreoParser.ContinuationContext ctx) {
-        if (ctx.c == null) return new Continuation((Term) visit(ctx.t));
-        return new Continuation((Term) visit(ctx.t), (Choreo) visit(ctx.c));
+        if (ctx.c == null) return new Choice((Term) visit(ctx.t));
+        return new Choice((Term) visit(ctx.t), (Choreo) visit(ctx.c));
     }
 
     @Override

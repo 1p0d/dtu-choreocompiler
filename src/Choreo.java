@@ -26,7 +26,7 @@ class Definition extends Choreo {
     public String compile(Environment env) {
         if (!env.currentAgent.equals(this.agent)) return this.choreography.compile(env);
         for (Variable variable : this.variables) {
-            env.frames.getFirst().add(variable);
+            env.agentFrames.get(env.currentAgent).getLast().a.add(variable);
         }
         StringBuilder sb = new StringBuilder();
         for (Variable variable : this.variables) {
@@ -59,15 +59,16 @@ class Message extends Choreo {
 
     @Override
     public String compile(Environment env) {
-        if (env.currentAgent.equals(this.agentFrom)) {
-            StringBuilder sb = new StringBuilder();
-            for (Choice choice : this.choices) {
-                sb.append(choice.compile(env));
-            }
-            return sb.toString();
-        } else if (env.currentAgent.equals(this.agentTo)) {
-            return "receive(" + this.label + ").";
+        for (Choice choice : this.choices) {
+            choice.compile(env);
         }
+        /*StringBuilder sb = new StringBuilder();
+        for (Choice choice : this.choices) {
+            sb.append(choice.compile(env));
+        }
+        if (env.currentAgent.equals(this.agentTo))
+            sb.append("receive(").append(this.label).append(").");
+        return sb.toString();*/
         return "";
     }
 }

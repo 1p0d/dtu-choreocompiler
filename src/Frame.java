@@ -101,6 +101,6 @@ public class Frame extends AST {
 
     private String getLabel() {
         // get label uniquely identifying term
-        return this.counter++ + "";
+        return "l" + this.counter++;
     }
 }

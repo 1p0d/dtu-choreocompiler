@@ -1,15 +1,14 @@
-import java.util.ArrayList;
+import org.antlr.v4.runtime.misc.Pair;
+
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Environment {
-    List<Frame> frames;
-    List<String> agents;
+    Map<String, List<Pair<Frame, Choreo>>> agentFrames;
     String currentAgent;
-    // TODO: maybe add a depth tracker, could be Map<Int, Int> that holds a counter for each depth to be able to form
-    //  and access frames throughout the depths
 
     public Environment() {
-        frames = new ArrayList<>();
-        agents = new ArrayList<>();
+        this.agentFrames = new HashMap<>();
     }
 }

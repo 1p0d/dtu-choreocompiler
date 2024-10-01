@@ -15,11 +15,10 @@ public class Main {
         ChoreoGrammarVisitor visitor = new ChoreoGrammarVisitor();
         AST ast = visitor.visit(tree);
         Environment env = ChoreoGrammarVisitor.env;
-        for (String agent : env.agents) {
+        for (String agent : env.agentFrames.keySet()) {
             System.out.println("Local behavior for agent " + agent + ":");
             env.currentAgent = agent;
-            env.frames.removeFirst();
-            System.out.println(((Choreo) ast).compile(env));
+            System.out.println(((Start) ast).compile(env));
             System.out.println();
         }
     }
