@@ -1,6 +1,6 @@
-A: sk(A,s),A,s.
+A: sk(A,s),A,s,G.
 s: sk(A,s),A,s.
 
-A: new M, K. A -> s: l
-    M. s -> A: l2 M
-  + K. s -> A: l2 K
+A: new M, K. (A -> s: l
+    M. (s -> A: l2 M)
+  + K. (s -> A: l2 K))

@@ -23,21 +23,22 @@ public class Frame extends AST {
         for (Term term : knowledge) this.add(term);
     }
 
-    public String add(Term term, String label) {
-        if (this.knowledge.containsKey(label)) return this.knowledge.get(label).toString();
+    public Term add(Term term, String label) {
+        if (this.knowledge.containsKey(label)) return new Variable(label);
         this.labelsNew.add(label);
         this.knowledge.put(label, term);
         this.labelsNew.addAll(this.labelsHold);
         this.labelsHold.clear();
-        return label;
+        return new Variable(label);
     }
 
-    public String add(Term term) {
+    public Term add(Term term) {
         String label = getLabel();
         return this.add(term, label);
     }
 
     public Term compose(Term term) {
+        if (term == null) return null;
         // if agent knows about term and term is checked, return known term
         for (Map.Entry<String, Term> entry : knowledge.entrySet()) {
             String label = entry.getKey();
@@ -77,22 +78,27 @@ public class Frame extends AST {
                 this.labelsDone.add(label);
                 continue;
             }
+            Term keyLabel = this.compose(function.getKey());
             // if function is keyed but key cannot be composed, continue
-            if (RegisteredFunction.KEYED_FUNCTIONS.contains(registeredFunction) && this.compose(function.getKey()) == null) {
+            if (RegisteredFunction.KEYED_FUNCTIONS.contains(registeredFunction) && keyLabel == null) {
                 this.labelsHold.add(label);
                 continue;
             }
-            List<String> argLabels = new ArrayList<>();
+            List<Term> args = function.getContent();
+            List<Term> argLabels = new ArrayList<>();
             // if function is analyzable, add args to frame
             if (registeredFunction.analyzable) {
-                for (Term arg : function.getContent())
+                for (Term arg : args)
                     argLabels.add(this.add(arg));
             }
             if (registeredFunction.equals(RegisteredFunction.PAIR)) {
-                for (int i = 0; i < function.getContent().size(); i++)
-                    checks.add(new Pair<>(new Variable(argLabels.get(i)), new Function(registeredFunction.destructor, List.of(function.getContent().get(i)))));
+                for (int i = 0; i < args.size(); i++)
+                    checks.add(new Pair<>(argLabels.get(i), new Function(registeredFunction.destructor + (i + 1), List.of(args.get(i)))));
+            } else if (RegisteredFunction.KEYED_FUNCTIONS.contains(registeredFunction)) {
+                argLabels.addFirst(keyLabel);
+                checks.add(new Pair<>(new Variable(label), new Function(registeredFunction.destructor, argLabels)));
             } else {
-                checks.add(new Pair<>(new Variable(label), new Function(registeredFunction.destructor, function.args)));
+                checks.add(new Pair<>(new Variable(label), new Function(registeredFunction.destructor, argLabels)));
             }
             this.labelsDone.add(label);
         }

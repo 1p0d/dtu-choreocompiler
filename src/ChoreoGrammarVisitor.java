@@ -12,7 +12,7 @@ public class ChoreoGrammarVisitor extends ChoreoBaseVisitor<AST> {
         Choreo choreo = (Choreo) visit(ctx.c);
         for (ChoreoParser.KnwlContext knwl : ctx.ks) {
             Knowledge knowledge = (Knowledge) visit(knwl);
-            env.agentFrames.put(knowledge.agent, List.of(new Pair<>(new Frame(knowledge.knowledge), choreo)));
+            env.agentsFrames.put(knowledge.agent, List.of(new Pair<>(new Frame(knowledge.knowledge), choreo)));
         }
         return new Start();
     }

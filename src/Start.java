@@ -7,7 +7,7 @@ public class Start extends AST {
 
     public String compile(Environment env) {
         StringBuilder sb = new StringBuilder(env.currentAgent).append(": ");
-        Pair<Frame, Choreo> agentFrame = env.agentFrames.get(env.currentAgent).getFirst();
+        Pair<Frame, Choreo> agentFrame = env.agentsFrames.get(env.currentAgent).getFirst();
         List<Term> knowledge = agentFrame.a.knowledge.values().stream().toList();
         for (int i = 0; i < knowledge.size(); i++) {
             sb.append(knowledge.get(i).compile(env));

@@ -15,7 +15,7 @@ public class Main {
         ChoreoGrammarVisitor visitor = new ChoreoGrammarVisitor();
         AST ast = visitor.visit(tree);
         Environment env = ChoreoGrammarVisitor.env;
-        for (String agent : env.agentFrames.keySet()) {
+        for (String agent : env.agentsFrames.keySet()) {
             System.out.println("Local behavior for agent " + agent + ":");
             env.currentAgent = agent;
             System.out.println(((Start) ast).compile(env));

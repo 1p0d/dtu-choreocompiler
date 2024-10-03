@@ -26,7 +26,7 @@ class Definition extends Choreo {
     public String compile(Environment env) {
         if (!env.currentAgent.equals(this.agent)) return this.choreography.compile(env);
         for (Variable variable : this.variables) {
-            env.agentFrames.get(env.currentAgent).getLast().a.add(variable);
+            env.agentsFrames.get(env.currentAgent).getLast().a.add(variable);
         }
         StringBuilder sb = new StringBuilder();
         for (Variable variable : this.variables) {
@@ -59,16 +59,18 @@ class Message extends Choreo {
 
     @Override
     public String compile(Environment env) {
-        for (Choice choice : this.choices) {
-            choice.compile(env);
-        }
-        /*StringBuilder sb = new StringBuilder();
-        for (Choice choice : this.choices) {
-            sb.append(choice.compile(env));
-        }
+        StringBuilder sb = new StringBuilder();
         if (env.currentAgent.equals(this.agentTo))
-            sb.append("receive(").append(this.label).append(").");
-        return sb.toString();*/
-        return "";
+            sb.append("receive(").append(this.label).append(").\n");
+        for (int i = 0; i < this.choices.size(); i++) {
+            if (this.choices.size() > 1 && i == 0) sb.append("(");
+            String compiledChoice = this.choices.get(i).compile(env, this.agentFrom);
+            if (compiledChoice != null) {
+                sb.append(compiledChoice);
+                if (i < this.choices.size() - 1) sb.append(" +\n");
+            }
+            if (this.choices.size() > 1 && i == this.choices.size() - 1) sb.append(")\n");
+        }
+        return sb.toString();
     }
 }
