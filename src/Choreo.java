@@ -13,25 +13,25 @@ class Empty extends Choreo {
 
 class Definition extends Choreo {
     String agent;
-    List<Variable> variables;
+    List<Constant> constants;
     Choreo choreography;
 
-    public Definition(String agent, List<Variable> variables, Choreo choreography) {
+    public Definition(String agent, List<Constant> constants, Choreo choreography) {
         this.agent = agent;
-        this.variables = variables;
+        this.constants = constants;
         this.choreography = choreography;
     }
 
     @Override
     public String compile(Environment env) {
         if (!env.currentAgent.equals(this.agent)) return this.choreography.compile(env);
-        for (Variable variable : this.variables) {
-            env.agentsFrames.get(env.currentAgent).getLast().a.add(variable);
+        for (Constant constant : this.constants) {
+            env.agentsFrames.get(env.currentAgent).getLast().a.add(constant);
         }
         StringBuilder sb = new StringBuilder();
-        for (Variable variable : this.variables) {
+        for (Constant constant : this.constants) {
             sb.append("var ");
-            sb.append(variable.compile(env));
+            sb.append(constant.compile(env));
             sb.append(".\n");
         }
         return sb.append(this.choreography.compile(env)).toString();

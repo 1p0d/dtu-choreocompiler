@@ -40,8 +40,8 @@ public class ChoreoGrammarVisitor extends ChoreoBaseVisitor<AST> {
     }
 
     @Override
-    public AST visitVariable(ChoreoParser.VariableContext ctx) {
-        return new Variable(ctx.x.getText());
+    public AST visitConstant(ChoreoParser.ConstantContext ctx) {
+        return new Constant(ctx.x.getText());
     }
 
     @Override
@@ -76,7 +76,7 @@ public class ChoreoGrammarVisitor extends ChoreoBaseVisitor<AST> {
 
     @Override
     public AST visitDefinition(ChoreoParser.DefinitionContext ctx) {
-        return new Definition(ctx.a.getText(), ctx.vars.stream().map(var -> new Variable(var.getText())).toList(), (Choreo) visit(ctx.c));
+        return new Definition(ctx.a.getText(), ctx.vars.stream().map(var -> new Constant(var.getText())).toList(), (Choreo) visit(ctx.c));
     }
 
     @Override

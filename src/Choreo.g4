@@ -21,7 +21,7 @@ knwl: a=IDENT ':' ts+=term (',' ts+=term)* '.'                              # Kn
     ;
 
 term: f=IDENT '(' as+=term (',' as+=term)* ')'                              # Function
-    | x=IDENT                                                               # Variable
+    | x=IDENT                                                               # Constant
     | '[' m=term ']' k=term                                                 # MAC
     | '(' m=term ')'                                                        # TermParen
     ;

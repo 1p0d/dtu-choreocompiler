@@ -7,10 +7,10 @@ public abstract class Term extends AST {
     abstract public List<Term> getContent();
 }
 
-class Variable extends Term {
+class Constant extends Term {
     String x;
 
-    public Variable(String x) {
+    public Constant(String x) {
         this.x = x;
     }
 
@@ -33,8 +33,8 @@ class Variable extends Term {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        Variable variable = (Variable) o;
-        return this.x.equals(variable.x);
+        Constant constant = (Constant) o;
+        return this.x.equals(constant.x);
     }
 
     @Override

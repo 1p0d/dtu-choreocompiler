@@ -24,12 +24,12 @@ public class Frame extends AST {
     }
 
     public Term add(Term term, String label) {
-        if (this.knowledge.containsKey(label)) return new Variable(label);
+        if (this.knowledge.containsKey(label)) return new Constant(label);
         this.labelsNew.add(label);
         this.knowledge.put(label, term);
         this.labelsNew.addAll(this.labelsHold);
         this.labelsHold.clear();
-        return new Variable(label);
+        return new Constant(label);
     }
 
     public Term add(Term term) {
@@ -43,7 +43,7 @@ public class Frame extends AST {
         for (Map.Entry<String, Term> entry : knowledge.entrySet()) {
             String label = entry.getKey();
             Term knownTerm = entry.getValue();
-            if (knownTerm.equals(term) && this.labelsDone.contains(label)) return new Variable(label);
+            if (knownTerm.equals(term) && this.labelsDone.contains(label)) return new Constant(label);
         }
         if (term instanceof Function function) {
             // if function is not globally callable and agent does not know the term, the agent is not allowed to compose
@@ -72,33 +72,30 @@ public class Frame extends AST {
                 this.labelsDone.add(label);
                 continue;
             }
-            // if function is not registered, continue
+            // if function is not registered or not analyzable, continue
             RegisteredFunction registeredFunction = RegisteredFunction.getRegisteredFunction(function.name);
-            if (registeredFunction == null) {
+            if (registeredFunction == null || !registeredFunction.analyzable) {
                 this.labelsDone.add(label);
-                continue;
-            }
-            Term keyLabel = this.compose(function.getKey());
-            // if function is keyed but key cannot be composed, continue
-            if (RegisteredFunction.KEYED_FUNCTIONS.contains(registeredFunction) && keyLabel == null) {
-                this.labelsHold.add(label);
                 continue;
             }
             List<Term> args = function.getContent();
             List<Term> argLabels = new ArrayList<>();
-            // if function is analyzable, add args to frame
-            if (registeredFunction.analyzable) {
-                for (Term arg : args)
-                    argLabels.add(this.add(arg));
+            for (Term arg : args)
+                argLabels.add(this.add(arg));
+            if (RegisteredFunction.KEYED_FUNCTIONS.contains(registeredFunction)) {
+                Term keyLabel = this.compose(function.getKey());
+                // if function is keyed but key cannot be composed, continue
+                if (RegisteredFunction.KEYED_FUNCTIONS.contains(registeredFunction) && keyLabel == null) {
+                    this.labelsHold.add(label);
+                    continue;
+                }
+                argLabels.addFirst(keyLabel);
             }
             if (registeredFunction.equals(RegisteredFunction.PAIR)) {
                 for (int i = 0; i < args.size(); i++)
                     checks.add(new Pair<>(argLabels.get(i), new Function(registeredFunction.destructor + (i + 1), List.of(args.get(i)))));
-            } else if (RegisteredFunction.KEYED_FUNCTIONS.contains(registeredFunction)) {
-                argLabels.addFirst(keyLabel);
-                checks.add(new Pair<>(new Variable(label), new Function(registeredFunction.destructor, argLabels)));
             } else {
-                checks.add(new Pair<>(new Variable(label), new Function(registeredFunction.destructor, argLabels)));
+                checks.add(new Pair<>(new Constant(label), new Function(registeredFunction.destructor, argLabels)));
             }
             this.labelsDone.add(label);
         }
