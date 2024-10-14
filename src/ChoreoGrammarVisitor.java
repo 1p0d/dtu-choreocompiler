@@ -1,5 +1,3 @@
-import org.antlr.v4.runtime.misc.Pair;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -10,11 +8,9 @@ public class ChoreoGrammarVisitor extends ChoreoBaseVisitor<AST> {
 
     public AST visitStart(ChoreoParser.StartContext ctx) {
         Choreo choreo = (Choreo) visit(ctx.c);
-        for (ChoreoParser.KnwlContext knwl : ctx.ks) {
-            Knowledge knowledge = (Knowledge) visit(knwl);
-            env.agentsFrames.put(knowledge.agent, List.of(new Pair<>(new Frame(knowledge.knowledge), choreo)));
-        }
-        return new Start();
+        List<Knowledge> knowledges = new ArrayList<>();
+        ctx.ks.forEach(k -> knowledges.add((Knowledge) visit(k)));
+        return new Start(choreo, knowledges);
     }
 
     /* ---------- knwl ---------- */
