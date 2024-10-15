@@ -3,12 +3,17 @@ import org.antlr.v4.runtime.misc.Pair;
 import java.util.*;
 
 public class Environment {
+    public String currentAgent;
+
     public Environment() {
     }
 
     public Map<String, String> compile(Map<String, List<Pair<Frame, Choreo>>> agentPairsMap) {
         Map<String, String> agentTranslations = new HashMap<>();
-        agentPairsMap.keySet().forEach(agent -> agentTranslations.put(agent, compileAgent(agent, agentPairsMap.get(agent), "")));
+        agentPairsMap.keySet().forEach(agent -> {
+            this.currentAgent = agent;
+            agentTranslations.put(agent, compileAgent(agent, agentPairsMap.get(agent), ""));
+        });
         return agentTranslations;
     }
 
