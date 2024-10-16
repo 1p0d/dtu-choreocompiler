@@ -103,7 +103,7 @@ public class Frame extends AST {
     }
 
     private String getLabel() {
-        // TODO: perhaps a value based ID is needed for uniqueness across frames, e.g. crypt(pk(B),pair(msg,M)) = _crypt_pk_B_pair_msg_M
+        // TODO: perhaps a value based ID is needed for uniqueness across frames, e.g. label of crypt(pk(B),pair(msg,M)) is _crypt_pk_B_pair_msg_M
         return "l" + this.counter++;
     }
 }

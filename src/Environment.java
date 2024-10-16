@@ -18,7 +18,7 @@ public class Environment {
     }
 
     public String compileAgent(String agent, List<Pair<Frame, Choreo>> agentPairs, String translation) {
-        if (agent == null || agent.isBlank() || agentPairs == null || agentPairs.isEmpty()) return "";
+        if (agent == null || agent.isBlank() || agentPairs == null || agentPairs.isEmpty()) return translation;
         ListIterator<Pair<Frame, Choreo>> listIterator = agentPairs.listIterator();
         while (listIterator.hasNext()) {
             Pair<Frame, Choreo> pair = listIterator.next();
@@ -71,6 +71,7 @@ public class Environment {
             return this.compileAgent(agent, newAgentPairs, translationBuilder.toString());
         }
         // all choreos are a message that agent is receiver of
+        // TODO: collect checks
         if (agentPairs.stream().allMatch(pair -> pair.b instanceof Message message && message.agentTo.equals(agent))) {
             for (Pair<Frame, Choreo> pair : agentPairs) {
                 Message message = (Message) pair.b;
