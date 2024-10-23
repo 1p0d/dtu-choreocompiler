@@ -1,4 +1,5 @@
 import org.antlr.v4.runtime.misc.Pair;
+import org.antlr.v4.runtime.misc.Triple;
 
 import java.util.*;
 
@@ -23,8 +24,19 @@ public class Frame extends AST {
         for (Term term : knowledge) this.add(term);
     }
 
+    public Frame(Frame other) {
+        this.knowledge = new HashMap<>(other.knowledge);
+        this.recipes = new HashMap<>(other.recipes);
+        this.labelsNew = new ArrayList<>(other.labelsNew);
+        this.labelsHold = new ArrayList<>(other.labelsHold);
+        this.labelsDone = new ArrayList<>(other.labelsDone);
+        this.counter = other.counter;
+    }
+
     public Term add(Term term, String label) {
-        if (this.knowledge.containsKey(label)) return new Constant(label);
+        Term composedTerm = this.compose(term);
+        if (composedTerm != null) return composedTerm;
+        if (label == null || this.knowledge.containsKey(label)) label = getLabel();
         this.labelsNew.add(label);
         this.knowledge.put(label, term);
         this.labelsNew.addAll(this.labelsHold);
@@ -33,8 +45,7 @@ public class Frame extends AST {
     }
 
     public Term add(Term term) {
-        String label = getLabel();
-        return this.add(term, label);
+        return this.add(term, null);
     }
 
     public Term compose(Term term) {
@@ -43,7 +54,7 @@ public class Frame extends AST {
         for (Map.Entry<String, Term> entry : knowledge.entrySet()) {
             String label = entry.getKey();
             Term knownTerm = entry.getValue();
-            if (knownTerm.equals(term) && this.labelsDone.contains(label)) return new Constant(label);
+            if (knownTerm.equals(term)) return new Constant(label);
         }
         if (term instanceof Function function) {
             // if function is not globally callable and agent does not know the term, the agent is not allowed to compose
@@ -61,8 +72,9 @@ public class Frame extends AST {
         return null;
     }
 
-    public List<Pair<Term, Term>> analyze() {
-        List<Pair<Term, Term>> checks = new ArrayList<>();
+    // instead of adding the arg and resuming
+    public List<Triple<Boolean, Term, Term>> analyze() {
+        List<Triple<Boolean, Term, Term>> checks = new ArrayList<>();
         // go through all new labels
         while (!this.labelsNew.isEmpty()) {
             String label = this.labelsNew.removeFirst();
@@ -80,8 +92,15 @@ public class Frame extends AST {
             }
             List<Term> args = function.getContent();
             List<Term> argLabels = new ArrayList<>();
-            for (Term arg : args)
-                argLabels.add(this.add(arg));
+            for (Term arg : args) {
+                Term composedArg = this.compose(arg);
+                if (composedArg != null && !this.labelsNew.contains(composedArg.toString())) {
+                    // IF arg = composedArg
+                    checks.add(new Triple<>(false, arg, composedArg));
+                } else {
+                    argLabels.add(this.add(arg));
+                }
+            }
             if (RegisteredFunction.KEYED_FUNCTIONS.contains(registeredFunction)) {
                 Term keyLabel = this.compose(function.getKey());
                 // if function is keyed but key cannot be composed, continue
@@ -92,10 +111,12 @@ public class Frame extends AST {
                 argLabels.addFirst(keyLabel);
             }
             if (registeredFunction.equals(RegisteredFunction.PAIR)) {
-                for (int i = 0; i < args.size(); i++)
-                    checks.add(new Pair<>(argLabels.get(i), new Function(registeredFunction.destructor + (i + 1), List.of(args.get(i)))));
-            } else {
-                checks.add(new Pair<>(new Constant(label), new Function(registeredFunction.destructor, argLabels)));
+                for (int i = 0; i < argLabels.size(); i++)
+                    // TRY label = destructor(arg)
+                    checks.add(new Triple<>(true, argLabels.get(i), new Function(registeredFunction.destructor + (i + 1), List.of(new Constant(label)))));
+            } else if (argLabels.getFirst() != null) {
+                // TRY label = destructor(arg)
+                checks.add(new Triple<>(true, argLabels.getFirst(), new Function(registeredFunction.destructor, List.of(new Constant(label)))));
             }
             this.labelsDone.add(label);
         }

@@ -38,6 +38,11 @@ class Constant extends Term {
     }
 
     @Override
+    public String toString() {
+        return x;
+    }
+
+    @Override
     public int hashCode() {
         return x.hashCode();
     }
@@ -87,6 +92,17 @@ class Function extends Term {
         Function function = (Function) o;
         if (!this.name.equals(function.name)) return false;
         return this.args.equals(function.args);
+    }
+
+    @Override
+    public String toString() {
+        StringBuilder stringBuilder = new StringBuilder(this.name + "(");
+        for (int i = 0; i < this.args.size(); i++) {
+            stringBuilder.append(this.args.get(i));
+            if (i < this.args.size() - 1) stringBuilder.append(",");
+        }
+        stringBuilder.append(")");
+        return stringBuilder.toString();
     }
 
     @Override

@@ -1,0 +1,9 @@
+B: B, pk(B), inv(pk(B)), A, pk(A), s, pk(s)
+receive(l1).
+try m = dsign(l1) in
+    try n = dcrypt(inv(pk(B)),m) in
+        if (vpair(n)) then
+            send(h(π2(n))).
+        else 0
+    catch 0
+catch 0
