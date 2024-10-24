@@ -3,10 +3,10 @@ import java.util.List;
 public enum RegisteredFunction {
     CRYPT(  "crypt",    "vcrypt",   "dcrypt",   true,   true,   true),
     SCRYPT( "scrypt",   "vscrypt",  "dscrypt",  true,   true,   true),
-    SIGN(   "sign",     "vsign",    "open",     true,   true,   true),
+    SIGN(   "sign",     "vsign",    "dsign",    true,   true,   true),
     PAIR(   "pair",     "vpair",    "π",        true,   true,   false),
     HASH(   "h",        "h",        null,       true,   false,  false),
-    MAC(    "mac",      "mac",      "dmac",       true,   true,   true),
+    MAC(    "mac",      "mac",      "dmac",     true,   true,   true),
     PK(     "pk",       null,       null,       true,   false,  false),
     INV(    "inv",      null,       null,       false,  false,  false);
 
@@ -17,7 +17,7 @@ public enum RegisteredFunction {
     final boolean analyzable;
     final boolean keyed;
 
-    static final List<RegisteredFunction> KEYED_FUNCTIONS = List.of(CRYPT, SCRYPT, SIGN);
+    static final List<RegisteredFunction> CRYPT_FUNCTIONS = List.of(CRYPT, SCRYPT);
 
     RegisteredFunction(String name, String verifier, String destructor, boolean global, boolean analyzable, boolean keyed) {
         this.name = name;

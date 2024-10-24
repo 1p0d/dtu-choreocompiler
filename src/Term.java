@@ -70,15 +70,17 @@ class Function extends Term {
 
     @Override
     public Term getKey() {
-        if (RegisteredFunction.KEYED_FUNCTIONS.contains(RegisteredFunction.getRegisteredFunction(this.name)))
-            return this.name.equals(RegisteredFunction.CRYPT.name) ? new Function(RegisteredFunction.INV.name, this.args.subList(0, 1)) : this.args.getFirst();
+        RegisteredFunction registeredFunction = RegisteredFunction.getRegisteredFunction(this.name);
+        if (registeredFunction != null && registeredFunction.keyed)
+            return this.name.equals(RegisteredFunction.CRYPT.name) ?
+                    new Function(RegisteredFunction.INV.name, this.args.subList(0, 1)) : this.args.getFirst();
         return null;
     }
 
     @Override
     public List<Term> getContent() {
         RegisteredFunction registeredFunction = RegisteredFunction.getRegisteredFunction(this.name);
-        if (RegisteredFunction.KEYED_FUNCTIONS.contains(registeredFunction))
+        if (RegisteredFunction.CRYPT_FUNCTIONS.contains(registeredFunction))
             return List.of(this.args.get(1));
         if (registeredFunction != null && registeredFunction.analyzable)
             return this.args;

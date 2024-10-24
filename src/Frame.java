@@ -33,18 +33,19 @@ public class Frame extends AST {
         this.counter = other.counter;
     }
 
-    public Term add(Term term, String label) {
+    // returns pair(label, isNew)
+    public Pair<Term, Boolean> add(Term term, String label) {
         Term composedTerm = this.compose(term);
-        if (composedTerm != null) return composedTerm;
+        if (composedTerm != null) return new Pair<>(composedTerm, false);
         if (label == null || this.knowledge.containsKey(label)) label = getLabel();
         this.labelsNew.add(label);
         this.knowledge.put(label, term);
         this.labelsNew.addAll(this.labelsHold);
         this.labelsHold.clear();
-        return new Constant(label);
+        return new Pair<>(new Constant(label), true);
     }
 
-    public Term add(Term term) {
+    public Pair<Term, Boolean> add(Term term) {
         return this.add(term, null);
     }
 
@@ -74,6 +75,7 @@ public class Frame extends AST {
 
     // instead of adding the arg and resuming
     public List<Triple<Boolean, Term, Term>> analyze() {
+        // Triple<useTry, left, right>
         List<Triple<Boolean, Term, Term>> checks = new ArrayList<>();
         // go through all new labels
         while (!this.labelsNew.isEmpty()) {
@@ -91,32 +93,30 @@ public class Frame extends AST {
                 continue;
             }
             List<Term> args = function.getContent();
-            List<Term> argLabels = new ArrayList<>();
-            for (Term arg : args) {
-                Term composedArg = this.compose(arg);
-                if (composedArg != null && !this.labelsNew.contains(composedArg.toString())) {
-                    // IF arg = composedArg
-                    checks.add(new Triple<>(false, arg, composedArg));
-                } else {
-                    argLabels.add(this.add(arg));
-                }
-            }
-            if (RegisteredFunction.KEYED_FUNCTIONS.contains(registeredFunction)) {
+            if (RegisteredFunction.CRYPT_FUNCTIONS.contains(registeredFunction)) {
                 Term keyLabel = this.compose(function.getKey());
-                // if function is keyed but key cannot be composed, continue
-                if (RegisteredFunction.KEYED_FUNCTIONS.contains(registeredFunction) && keyLabel == null) {
+                // if function requires key to analyze but key cannot be composed, continue
+                if (keyLabel == null) {
                     this.labelsHold.add(label);
                     continue;
                 }
-                argLabels.addFirst(keyLabel);
-            }
-            if (registeredFunction.equals(RegisteredFunction.PAIR)) {
-                for (int i = 0; i < argLabels.size(); i++)
-                    // TRY label = destructor(arg)
-                    checks.add(new Triple<>(true, argLabels.get(i), new Function(registeredFunction.destructor + (i + 1), List.of(new Constant(label)))));
-            } else if (argLabels.getFirst() != null) {
-                // TRY label = destructor(arg)
-                checks.add(new Triple<>(true, argLabels.getFirst(), new Function(registeredFunction.destructor, List.of(new Constant(label)))));
+                Pair<Term, Boolean> addedMessage = this.add(args.getLast());
+                checks.add(new Triple<>(addedMessage.b, addedMessage.a, new Function(registeredFunction.destructor,
+                        List.of(keyLabel, new Constant(label)))));
+            } else if (registeredFunction.keyed) {
+                Pair<Term, Boolean> addedMessage = this.add(args.getLast());
+                checks.add(new Triple<>(addedMessage.b, addedMessage.a, new Function(registeredFunction.destructor,
+                        List.of(new Constant(label)))));
+            } else if (registeredFunction.equals(RegisteredFunction.PAIR)) {
+                for (int i = 0; i < args.size(); i++) {
+                    Pair<Term, Boolean> addedTerm = this.add(args.get(i));
+                    checks.add(new Triple<>(addedTerm.b, addedTerm.a,
+                            new Function(registeredFunction.destructor + (i + 1), List.of(new Constant(label)))));
+                }
+            } else {
+                Pair<Term, Boolean> addedTerm = this.add(args.getFirst());
+                checks.add(new Triple<>(addedTerm.b, addedTerm.a,
+                        new Function(registeredFunction.destructor, List.of(new Constant(label)))));
             }
             this.labelsDone.add(label);
         }

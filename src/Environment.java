@@ -24,7 +24,8 @@ public class Environment {
     }
 
     public String compileAgent(String agent, List<Pair<Frame, Choreo>> incomingAgentPairs, String translation) {
-        if (agent == null || agent.isBlank() || incomingAgentPairs == null || incomingAgentPairs.isEmpty()) return translation;
+        if (agent == null || agent.isBlank() || incomingAgentPairs == null || incomingAgentPairs.isEmpty())
+            return translation;
         List<Pair<Frame, Choreo>> agentPairs = new ArrayList<>(incomingAgentPairs);
         ListIterator<Pair<Frame, Choreo>> listIterator = agentPairs.listIterator();
         while (listIterator.hasNext()) {
@@ -62,7 +63,7 @@ public class Environment {
                 Frame frame = new Frame(pair.a);
                 Definition definition = (Definition) pair.b;
                 definition.constants.forEach(constant -> {
-                    Term label = frame.add(constant);
+                    Term label = frame.add(constant).a;
                     translationBuilder.append("var [").append(label).append("] ")
                             .append(constant.compile(this)).append(".\n");
                 });
@@ -92,29 +93,17 @@ public class Environment {
         // all choreos are a message that agent is receiver of
         if (agentPairs.stream().allMatch(pair -> pair.b instanceof Message message && message.agentTo.equals(agent))) {
             for (Pair<Frame, Choreo> pair : agentPairs) {
-                Frame frame = pair.a;
                 Message message = (Message) pair.b;
-//                Choice firstChoice = message.choices.getFirst();
-//                Frame firstChoiceFrame = new Frame(pair.a);
-//                firstChoiceFrame.add(firstChoice.message);
-//                List<Triple<Boolean, Term, Term>> firstChoiceChecks = firstChoiceFrame.analyze();
-//                translationBuilder.append(message.compile(this));
                 for (int i = 0; i < message.choices.size(); i++) {
                     Choice choice = message.choices.get(i);
                     Frame newFrame = new Frame(pair.a);
-                    Term label = newFrame.add(choice.message);
+                    Term label = newFrame.add(choice.message).a;
                     translationBuilder.append("receive([").append(label).append("] ")
                             .append(choice.message.compile(this)).append(").\n");
                     List<Triple<Boolean, Term, Term>> choiceChecks = newFrame.analyze();
-                    choiceChecks.forEach(check -> {
-                        if (check.a) {
-                            translationBuilder.append("try ").append(check.b.compile(this)).append(" = ").append(check.c.compile(this)).append("\n");
-                        } else {
-                            translationBuilder.append("if (").append(check.b.compile(this)).append(" = ").append(check.c.compile(this)).append(")\n");
-                        }
-                    });
-//                    if (!choiceChecks.equals(firstChoiceChecks))
-//                        throw new Error("The specification is ill-defined: All choices should require the same checks");
+                    choiceChecks.forEach(check ->
+                            translationBuilder.append(check.a ? "try " : "if ").append(check.b.compile(this)).append(" = ").append(check.c.compile(this)).append("\n")
+                    );
                     if (choice.choreography != null) newAgentPairs.add(new Pair<>(newFrame, choice.choreography));
                 }
             }
