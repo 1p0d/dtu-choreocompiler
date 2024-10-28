@@ -42,10 +42,10 @@ public class ChoreoGrammarVisitor extends ChoreoBaseVisitor<AST> {
 
     @Override
     public AST visitMAC(ChoreoParser.MACContext ctx) {
-        List<Term> args = new ArrayList<>();
-        args.add((Term) visit(ctx.k));
-        args.add((Term) visit(ctx.m));
-        return new Function(RegisteredFunction.MAC.name, args);
+        Term key = (Term) visit(ctx.k);
+        Term message = (Term) visit(ctx.m);
+        return new Function(RegisteredFunction.PAIR.name, List.of(message,
+                new Function(RegisteredFunction.MAC.name, List.of(key, message))));
     }
 
     @Override

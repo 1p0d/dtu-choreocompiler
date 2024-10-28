@@ -6,7 +6,7 @@ public enum RegisteredFunction {
     SIGN(   "sign",     "vsign",    "dsign",    true,   true,   true),
     PAIR(   "pair",     "vpair",    "π",        true,   true,   false),
     HASH(   "h",        "h",        null,       true,   false,  false),
-    MAC(    "mac",      "mac",      "dmac",     true,   true,   true),
+    MAC(    "mac",      "mac",      null,       true,   false,  true),
     PK(     "pk",       null,       null,       true,   false,  false),
     INV(    "inv",      null,       null,       false,  false,  false);
 
