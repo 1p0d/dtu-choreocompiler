@@ -1,5 +1,4 @@
 import org.antlr.v4.runtime.misc.Pair;
-import org.antlr.v4.runtime.misc.Triple;
 
 import java.util.*;
 
@@ -74,9 +73,8 @@ public class Frame extends AST {
     }
 
     // instead of adding the arg and resuming
-    public List<Triple<Boolean, Term, Term>> analyze() {
-        // Triple<useTry, left, right>
-        List<Triple<Boolean, Term, Term>> checks = new ArrayList<>();
+    public List<Check> analyze() {
+        List<Check> checks = new ArrayList<>();
         // go through all new labels
         while (!this.labelsNew.isEmpty()) {
             String label = this.labelsNew.removeFirst();
@@ -101,26 +99,26 @@ public class Frame extends AST {
                     continue;
                 }
                 Pair<Term, Boolean> addedMessage = this.add(args.getLast());
-                checks.add(new Triple<>(addedMessage.b, addedMessage.a, new Function(registeredFunction.destructor,
+                checks.add(new Check(addedMessage.b, addedMessage.a, new Function(registeredFunction.destructor,
                         List.of(keyLabel, new Constant(label)))));
             } else if (registeredFunction.keyed) {
                 Pair<Term, Boolean> addedMessage = this.add(args.getLast());
-                checks.add(new Triple<>(addedMessage.b, addedMessage.a, new Function(registeredFunction.destructor,
+                checks.add(new Check(addedMessage.b, addedMessage.a, new Function(registeredFunction.destructor,
                         List.of(new Constant(label)))));
             } else if (registeredFunction.equals(RegisteredFunction.PAIR)) {
                 for (int i = 0; i < args.size(); i++) {
                     Pair<Term, Boolean> addedTerm = this.add(args.get(i));
-                    checks.add(new Triple<>(addedTerm.b, addedTerm.a,
+                    checks.add(new Check(addedTerm.b, addedTerm.a,
                             new Function(registeredFunction.destructor + (i + 1), List.of(new Constant(label)))));
                 }
             } else {
                 Pair<Term, Boolean> addedTerm = this.add(args.getFirst());
-                checks.add(new Triple<>(addedTerm.b, addedTerm.a,
+                checks.add(new Check(addedTerm.b, addedTerm.a,
                         new Function(registeredFunction.destructor, List.of(new Constant(label)))));
             }
             this.labelsDone.add(label);
         }
-        return checks;
+        return checks.stream().sorted((check1, check2) -> check1.isAssignment.equals(check2.isAssignment) ? 0 : check1.isAssignment ? -1 : 1).toList();
     }
 
     private String getLabel() {
