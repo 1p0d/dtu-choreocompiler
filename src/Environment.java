@@ -1,6 +1,4 @@
 import org.antlr.v4.runtime.misc.Pair;
-import org.antlr.v4.runtime.misc.Triple;
-
 import java.util.*;
 
 public class Environment {
@@ -18,12 +16,12 @@ public class Environment {
                     knwlBuilder.append("[").append(label).append("] ").append(term.compile(this)).append(", ")
             );
             knwlBuilder.deleteCharAt(knwlBuilder.length() - 1).deleteCharAt(knwlBuilder.length() - 1).append(".\n");
-            agentTranslations.put(agent, compileAgent(agent, agentPairsMap.get(agent), knwlBuilder.toString()));
+            agentTranslations.put(agent, compileAgent(agent, agentPairsMap.get(agent), knwlBuilder.toString(), 0));
         });
         return agentTranslations;
     }
 
-    public String compileAgent(String agent, List<Pair<Frame, Choreo>> incomingAgentPairs, String translation) {
+    public String compileAgent(String agent, List<Pair<Frame, Choreo>> incomingAgentPairs, String translation, Integer depth) {
         if (agent == null || agent.isBlank() || incomingAgentPairs == null || incomingAgentPairs.isEmpty())
             return translation;
         List<Pair<Frame, Choreo>> agentPairs = new ArrayList<>(incomingAgentPairs);
@@ -64,92 +62,94 @@ public class Environment {
                 Definition definition = (Definition) pair.b;
                 definition.constants.forEach(constant -> {
                     Term label = frame.add(constant).a;
-                    translationBuilder.append("var [").append(label).append("] ")
+                    translationBuilder.append("\t".repeat(depth)).append("var [").append(label).append("] ")
                             .append(constant.compile(this)).append(".\n");
                 });
                 if (definition.choreography != null) newAgentPairs.add(new Pair<>(frame, definition.choreography));
             }
-            return this.compileAgent(agent, newAgentPairs, translationBuilder.toString());
+            return this.compileAgent(agent, newAgentPairs, translationBuilder.toString(), depth);
         }
         // all choreos are a message that agent is sender of, have the same number of choices and recipes exist for every choice.message
         // TODO: check that all sends have the same recipes
         if (agentPairs.stream().allMatch(pair -> pair.b instanceof Message message && message.agentFrom.equals(agent) &&
                 message.choices.size() == ((Message) agentPairs.getFirst().b).choices.size() &&
                 message.choices.stream().allMatch(choice -> pair.a.compose(choice.message) != null))) {
+            Set<String> composedSends = new HashSet<>();
             for (Pair<Frame, Choreo> pair : agentPairs) {
                 Frame frame = pair.a;
                 Message message = (Message) pair.b;
-                translationBuilder.append("send(");
-                message.choices.forEach(choice -> {
-                    Term composedMessage = frame.compose(choice.message);
-                    translationBuilder.append(composedMessage.compile(this)).append(" +\n\t");
+                StringBuilder sb = new StringBuilder();
+                sb.append("\t".repeat(depth)).append("send(");
+                for (int i = 0; i < message.choices.size(); i++) {
+                    Choice choice = message.choices.get(i);
+                    sb.append(frame.compose(choice.message).compile(this));
+                    if (i < message.choices.size() - 1)
+                        sb.append(" +\n").append("\t".repeat(depth + 1));
                     if (choice.choreography != null)
                         newAgentPairs.add(new Pair<>(frame, choice.choreography));
-                });
-                translationBuilder.delete(translationBuilder.length() - 4, translationBuilder.length()).append(").\n");
+                }
+                composedSends.add(sb.append(").\n").toString());
             }
-            return this.compileAgent(agent, newAgentPairs, translationBuilder.toString());
+            composedSends.forEach(translationBuilder::append);
+            return this.compileAgent(agent, newAgentPairs, translationBuilder.toString(), depth);
         }
         // all choreos are a message that agent is receiver of
         if (agentPairs.stream().allMatch(pair -> pair.b instanceof Message message && message.agentTo.equals(agent))) {
             // produce list of choices and their checks
-            List<Pair<Choice, List<Check>>> choicesChecks = new ArrayList<>();
-            for (int i = 0; i < agentPairs.size(); i++) {
-                Pair<Frame, Choreo> pair = agentPairs.get(i);
+            List<Pair<Pair<Frame, Choreo>, List<Check>>> choicesChecks = new ArrayList<>();
+            Term label = null;
+            for (Pair<Frame, Choreo> pair : agentPairs) {
                 Message message = (Message) pair.b;
                 for (int j = 0; j < message.choices.size(); j++) {
                     Choice choice = message.choices.get(j);
                     Frame choiceFrame = new Frame(pair.a);
-                    Term label = choiceFrame.add(choice.message).a;
-                    choicesChecks.add(new Pair<>(choice, choiceFrame.analyze()));
-                    if (i == 0 && j == 0) translationBuilder.append("receive(").append(label).append(").\n");
+                    Term addedMessageLabel = choiceFrame.add(choice.message).a;
+                    if (label == null) label = addedMessageLabel;
+                    else if (!label.equals(addedMessageLabel))
+                        throw new Error("Compilation error: Frame generated unexpected label for received message. " +
+                                "Expected: " + label + ". Got: " + addedMessageLabel + ".");
+                    choicesChecks.add(new Pair<>(choice.choreography != null ?
+                            new Pair<>(choiceFrame, choice.choreography) : null, choiceFrame.analyze()));
                 }
             }
-            // now we want to render mutual assignment checks (tries)
-            // get assignment checks of all choices
-            List<List<Check>> assignmentChecksForEachChoice = new ArrayList<>();
-            // TODO
-            // get mutual checks
-            List<Check> mutualChecks = new ArrayList<>();
-            List<Check> referenceAssignmentChecks = choicesChecks.stream().reduce(choicesChecks.getFirst(), (a, b) -> a.b.size() > b.b.size() ? a : b)
-                    .b.stream().filter(check -> check.isAssignment).toList();
-            for (int i = 0; i < referenceAssignmentChecks.size(); i++) {
-                Check referenceCheck = referenceAssignmentChecks.get(i);
-                for (Pair<Choice, List<Check>> pair : choicesChecks) {
-                    Check check = pair.b.get(i);
-                    // TODO
-                }
-            }
-            for (Check check : choicesChecks.getFirst().b) {
-                if (choicesChecks.stream().allMatch(pair -> pair.b.stream().anyMatch(check::equals))) mutualChecks.add(check);
-            }
-            for (Check check : mutualChecks) {
-                translationBuilder.append(check.isAssignment ? "try " : "if ").append(check.left.compile(this))
-                        .append(" = ").append(check.right.compile(this)).append(check.isAssignment ? "do" : "then").append("\n");
-            }
-            // filter out mutual checks
-            choicesChecks = choicesChecks.stream().map(pair ->
-                new Pair<>(pair.a, pair.b.stream().filter(check -> !mutualChecks.contains(check)).toList())).toList();
-            // render individual checks if any and append this.compileAgent to translation builder with
-            for (Pair<Choice, List<Check>> pair : choicesChecks) {
-                Choice choice = pair.a;
+            translationBuilder.append("\t".repeat(depth)).append("receive(").append(label).append(").\n");
+            // create tree positioning checks and choices
+            // TODO: if checks do not require a specific order when rendered after all required tries
+            Node<ChoiceCheckNode> root = new Node<>(new ChoiceCheckNode());
+            for (Pair<Pair<Frame, Choreo>, List<Check>> pair : choicesChecks) {
+                Pair<Frame, Choreo> agentPair = pair.a;
                 List<Check> checks = pair.b;
-                // TODO: Render each choice with any leftover checks one after the other (IF block -> choice -> ELSE block -> nextChoice -> END block),
-                //  any choice without leftover checks should go in the first else block
-
-                // TODO: newAgentPairs should be gathered for each choice in the same block adding choice.choreography,
-                //  and this.compileAgent should be called recursively to compile the choice(s)
+                Node<ChoiceCheckNode> node = root;
+                for (Check check : checks)
+                    node = node.addChild(new Node<>(new ChoiceCheckNode(check)));
+                if (agentPair == null) continue;
+                Node<ChoiceCheckNode> newNode = new Node<>(new ChoiceCheckNode(agentPair));
+                node.addChild(newNode);
             }
-            for (Check check : mutualChecks) {
-                translationBuilder.append(check.isAssignment ? "catch" : "else").append(" 0\n").append("end");
-            }
-            return this.compileAgent(agent, newAgentPairs, translationBuilder.toString());
+            // render tree
+            return translationBuilder.append(renderNodes(agent, root.children, depth)).toString();
         }
         throw new Error("The specification is ill-defined: It did not match any expectations");
     }
 
-    private String renderChecks(List<Pair<Choice, List<Triple<Boolean, Term, Term>>>> choicesChecks) {
-
-        return "";
+    public String renderNodes(String agent, Set<Node<ChoiceCheckNode>> nodes, Integer depth) {
+        if (nodes.isEmpty()) return "";
+        StringBuilder sb = new StringBuilder();
+        List<Node<ChoiceCheckNode>> checkNodes = nodes.stream().filter(node -> node.payload.check != null).toList();
+        sb.append(this.compileAgent(agent, nodes.stream().filter(node -> node.payload.agentPair != null)
+                .map(node -> node.payload.agentPair).toList(), "", depth));
+        for (int i = 0; i < checkNodes.size(); i++) {
+            Node<ChoiceCheckNode> checkNode = checkNodes.get(i);
+            Check check = checkNode.payload.check;
+            sb.append("\t".repeat(depth + i)).append(check.isAssignment ? "try " : "if ")
+                    .append(check.left.compile(this)).append(" = ").append(check.right.compile(this))
+                    .append(" ").append(check.isAssignment ? "do" : "then").append("\n");
+            sb.append(renderNodes(agent, checkNode.children, depth + 1));
+            if (i < checkNodes.size() - 1)
+                sb.append("\t".repeat(depth + i)).append(check.isAssignment ? "catch" : "else").append("\n");
+            else
+                sb.append("\t".repeat(depth + i)).append(check.isAssignment ? "catch" : "else").append(" 0\n");
+        }
+        return sb.toString();
     }
 }

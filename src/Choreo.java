@@ -1,4 +1,5 @@
 import java.util.List;
+import java.util.Objects;
 
 public abstract class Choreo extends AST {
     abstract public String compile(Environment env);
@@ -67,5 +68,18 @@ class Message extends Choreo {
             }
         }
         return sb.append(")\n").toString();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Message message = (Message) o;
+        return Objects.equals(agentFrom, message.agentFrom) && Objects.equals(agentTo, message.agentTo) && Objects.equals(choices, message.choices) && Objects.equals(label, message.label);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(agentFrom, agentTo, choices, label);
     }
 }

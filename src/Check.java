@@ -23,4 +23,10 @@ public class Check {
     public int hashCode() {
         return Objects.hash(isAssignment, left, right);
     }
+
+    @Override
+    public String toString() {
+        if (isAssignment == null) return "null";
+        return (isAssignment ? "try " : "if ") + "(" + left + " = " + right + ")";
+    }
 }
