@@ -105,8 +105,21 @@ public class Environment {
                     if (i == 0 && j == 0) translationBuilder.append("receive(").append(label).append(").\n");
                 }
             }
+            // now we want to render mutual assignment checks (tries)
+            // get assignment checks of all choices
+            List<List<Check>> assignmentChecksForEachChoice = new ArrayList<>();
+            // TODO
             // get mutual checks
             List<Check> mutualChecks = new ArrayList<>();
+            List<Check> referenceAssignmentChecks = choicesChecks.stream().reduce(choicesChecks.getFirst(), (a, b) -> a.b.size() > b.b.size() ? a : b)
+                    .b.stream().filter(check -> check.isAssignment).toList();
+            for (int i = 0; i < referenceAssignmentChecks.size(); i++) {
+                Check referenceCheck = referenceAssignmentChecks.get(i);
+                for (Pair<Choice, List<Check>> pair : choicesChecks) {
+                    Check check = pair.b.get(i);
+                    // TODO
+                }
+            }
             for (Check check : choicesChecks.getFirst().b) {
                 if (choicesChecks.stream().allMatch(pair -> pair.b.stream().anyMatch(check::equals))) mutualChecks.add(check);
             }
