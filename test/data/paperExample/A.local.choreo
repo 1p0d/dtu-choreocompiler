@@ -1,0 +1,4 @@
+A: sk(A,s), A, s, B, pk(B), msg, upd.
+var M.
+var K.
+send(([crypt(pk(B),pair(msg,M))]sk(A,s)) + (send([crypt(pk(B),pair(upd,K))]sk(A,s)))).

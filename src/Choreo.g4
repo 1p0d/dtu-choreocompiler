@@ -14,26 +14,26 @@ IDENT: [a-zA-Z][a-zA-Z0-9]* ;
 
 WS : [ \r\n\t] + -> skip ;
 
-term: f=IDENT '(' as=args ')' 						# Function
-    | x=IDENT 										# Variable
-    | '[' m=term ']' k=term 						# MAC
-    | '(' m=term ')' 								# TermParen
+start: ks+=knwl+ c=choreo EOF
     ;
 
-args: as+=term (',' as+=term)* 						# Arguments
-	;
-
-choreo
-    : '0'											# Empty
-    | a=IDENT '->' b=IDENT ':' (l=IDENT)? ch=choice	# Message
-    | a=IDENT ':' 'new' vars+=IDENT (',' vars+=IDENT)* '.' c=choreo		# Definition
-	| '(' c=choreo ')'								# ChoreoParen
+knwl: a=IDENT ':' ts+=term (',' ts+=term)* '.'                              # Knowledge
     ;
 
-cont: t=term ('.' c=choreo)? 						# Continuation
-	;
+term: f=IDENT '(' as+=term (',' as+=term)* ')'                              # Function
+    | x=IDENT                                                               # Constant
+    | '[' m=term ']' k=term                                                 # MAC
+    | '(' m=term ')'                                                        # TermParen
+    ;
 
 choice
-	: co=cont ('+' ch=choice)?						# Choices
-    | '(' co=cont ')' ('+' ch=choice)?				# ChoicesParen
+    : t=term ('.' c=choreo)?                                                # Continuation
+    | '(' ch=choice ')'                                                     # ChoiceParen
+    ;
+
+choreo
+    : '0'                                                                   # Empty
+    | a=IDENT '->' b=IDENT ':' (l=IDENT)? chs+=choice ('+' chs+=choice)*    # Message
+    | a=IDENT ':' 'new' vars+=IDENT (',' vars+=IDENT)* '.' c=choreo         # Definition
+	| '(' c=choreo ')'                                                      # ChoreoParen
     ;

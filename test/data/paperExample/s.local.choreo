@@ -1,0 +1,5 @@
+s: sk(A,s), A, s, B, pk(B), msg, upd, pk(s), inv(pk(s)).
+receive(l).
+if (vmac(l,sk(A,s)) then
+    send(sign(inv(pk(s)),dmac(l))).
+else 0

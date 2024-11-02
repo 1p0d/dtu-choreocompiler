@@ -3,43 +3,54 @@ import java.util.List;
 
 public class ChoreoGrammarVisitor extends ChoreoBaseVisitor<AST> {
     public static Environment env = new Environment();
+
+    /* ---------- start ---------- */
+
+    public AST visitStart(ChoreoParser.StartContext ctx) {
+        Choreo choreo = (Choreo) visit(ctx.c);
+        List<Knowledge> knowledges = new ArrayList<>();
+        ctx.ks.forEach(k -> knowledges.add((Knowledge) visit(k)));
+        return new Start(choreo, knowledges);
+    }
+
+    /* ---------- knwl ---------- */
+
+    public AST visitKnowledge(ChoreoParser.KnowledgeContext ctx) {
+        String agent = ctx.a.getText();
+        List<Term> terms = new ArrayList<>();
+        for (ChoreoParser.TermContext c : ctx.ts) {
+            terms.add((Term) visit(c));
+        }
+        return new Knowledge(agent, terms);
+    }
+
     /* ---------- term ---------- */
 
     @Override
     public AST visitFunction(ChoreoParser.FunctionContext ctx) {
-        Arguments args = (Arguments) visit(ctx.as);
-        switch (ctx.f.getText()) {
-            case "crypt":
-                return new Crypt(args.getArguments().get(0), args.getArguments().get(1));
-            case "pair":
+        List<Term> args = new ArrayList<>();
+        for (ChoreoParser.TermContext arc : ctx.as) {
+            args.add((Term) visit(arc));
         }
-        return new Function(ctx.f.getText(), (Arguments) visit(ctx.as));
+        return new Function(ctx.f.getText(), args);
     }
 
     @Override
-    public AST visitVariable(ChoreoParser.VariableContext ctx) {
-        return new Variable(ctx.x.getText());
+    public AST visitConstant(ChoreoParser.ConstantContext ctx) {
+        return new Constant(ctx.x.getText());
     }
 
     @Override
     public AST visitMAC(ChoreoParser.MACContext ctx) {
-        return new MAC((Term) visit(ctx.m), (Term) visit(ctx.k));
+        Term key = (Term) visit(ctx.k);
+        Term message = (Term) visit(ctx.m);
+        return new Function(RegisteredFunction.PAIR.name, List.of(message,
+                new Function(RegisteredFunction.MAC.name, List.of(key, message))));
     }
 
     @Override
     public AST visitTermParen(ChoreoParser.TermParenContext ctx) {
         return visit(ctx.m);
-    }
-
-    /* ---------- choreo ---------- */
-
-    @Override
-    public AST visitArguments(ChoreoParser.ArgumentsContext ctx) {
-        List<Term> args = new ArrayList<>();
-        for (ChoreoParser.TermContext arc : ctx.as) {
-            args.add((Term) visit(arc));
-        }
-        return new Args(args);
     }
 
     /* ---------- choreo ---------- */
@@ -51,12 +62,17 @@ public class ChoreoGrammarVisitor extends ChoreoBaseVisitor<AST> {
 
     @Override
     public AST visitMessage(ChoreoParser.MessageContext ctx) {
-        return new Message(ctx.a.getText(), ctx.b.getText(), ctx.l.getText(), (Choice) visit(ctx.ch));
+        List<Choice> choices = new ArrayList<>();
+        for (ChoreoParser.ChoiceContext ch : ctx.chs)
+            choices.add((Choice) visit(ch));
+        if (ctx.l == null) return new Message(ctx.a.getText(), ctx.b.getText(), choices);
+        return new Message(ctx.a.getText(), ctx.b.getText(), choices, ctx.l.getText());
     }
 
     @Override
     public AST visitDefinition(ChoreoParser.DefinitionContext ctx) {
-        return new Definition(ctx.a.getText(), ctx.vars.stream().map(var -> new Variable(var.getText())).toList(), (Choreo) visit(ctx.c));
+        return new Definition(ctx.a.getText(), ctx.vars.stream()
+                .map(var -> new Constant(var.getText())).toList(), (Choreo) visit(ctx.c));
     }
 
     @Override
@@ -64,23 +80,16 @@ public class ChoreoGrammarVisitor extends ChoreoBaseVisitor<AST> {
         return visit(ctx.c);
     }
 
-    /* ---------- cont ---------- */
-
-    @Override
-    public AST visitContinuation(ChoreoParser.ContinuationContext ctx) {
-        return new Cont((Term) visit(ctx.t), (Choreo) visit(ctx.c));
-    }
-
     /* ---------- choice ---------- */
 
     @Override
-    public AST visitChoices(ChoreoParser.ChoicesContext ctx) {
-        return new Choice((Cont) visit(ctx.co), (Choice) visit(ctx.ch));
+    public AST visitContinuation(ChoreoParser.ContinuationContext ctx) {
+        if (ctx.c == null) return new Choice((Term) visit(ctx.t));
+        return new Choice((Term) visit(ctx.t), (Choreo) visit(ctx.c));
     }
 
     @Override
-    public AST visitChoicesParen(ChoreoParser.ChoicesParenContext ctx) {
-        // TODO: this prob wont work
-        return visitChoices((ChoreoParser.ChoicesContext) ctx.choice());
+    public AST visitChoiceParen(ChoreoParser.ChoiceParenContext ctx) {
+        return visit(ctx.ch);
     }
 }

@@ -1,9 +1,0 @@
-B: B, pk(B), inv(pk(B)), A, pk(A), s, pk(s)
-receive(l').
-if (vsign(pk(s),l')) then
-    try m = dcrypt(inv(pk(B)),gsignm(l')) in
-        if (vpair(m)) then
-            send(h(π2(m))).
-        else 0
-    catch 0
-else 0
