@@ -63,16 +63,16 @@ public class ChoreoGrammarVisitor extends ChoreoBaseVisitor<AST> {
     @Override
     public AST visitMessage(ChoreoParser.MessageContext ctx) {
         List<Choice> choices = new ArrayList<>();
-        for (ChoreoParser.ChoiceContext ch : ctx.chs) {
+        for (ChoreoParser.ChoiceContext ch : ctx.chs)
             choices.add((Choice) visit(ch));
-        }
         if (ctx.l == null) return new Message(ctx.a.getText(), ctx.b.getText(), choices);
         return new Message(ctx.a.getText(), ctx.b.getText(), choices, ctx.l.getText());
     }
 
     @Override
     public AST visitDefinition(ChoreoParser.DefinitionContext ctx) {
-        return new Definition(ctx.a.getText(), ctx.vars.stream().map(var -> new Constant(var.getText())).toList(), (Choreo) visit(ctx.c));
+        return new Definition(ctx.a.getText(), ctx.vars.stream()
+                .map(var -> new Constant(var.getText())).toList(), (Choreo) visit(ctx.c));
     }
 
     @Override

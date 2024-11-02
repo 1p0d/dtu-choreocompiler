@@ -32,7 +32,12 @@ public class Frame extends AST {
         this.counter = other.counter;
     }
 
-    // returns pair(label, isNew)
+    /**
+     * Adds term to frame knowledge
+     * @param term to add
+     * @param label to assign
+     * @return pair of label assigned and boolean depicting if term is new
+     */
     public Pair<Term, Boolean> add(Term term, String label) {
         Term composedTerm = this.compose(term);
         if (composedTerm != null) return new Pair<>(composedTerm, false);
@@ -44,10 +49,20 @@ public class Frame extends AST {
         return new Pair<>(new Constant(label), true);
     }
 
+    /**
+     * Adds term to frame knowledge and auto generates label
+     * @param term to add
+     * @return pair of label assigned and boolean depicting if term is new
+     */
     public Pair<Term, Boolean> add(Term term) {
         return this.add(term, null);
     }
 
+    /**
+     * Composes a given term with the current knowledge
+     * @param term to compose
+     * @return label or function of with labels as args that compose term
+     */
     public Term compose(Term term) {
         if (term == null) return null;
         // if agent knows about term and term is checked, return known term
@@ -73,6 +88,11 @@ public class Frame extends AST {
     }
 
     // instead of adding the arg and resuming
+
+    /**
+     * Analyzes all labels in labelsNew
+     * @return List of Checks that are required for all new labels
+     */
     public List<Check> analyze() {
         List<Check> checks = new ArrayList<>();
         // go through all new labels
@@ -91,9 +111,10 @@ public class Frame extends AST {
                 continue;
             }
             List<Term> args = function.getContent();
+            // if function requires key to analyze
             if (RegisteredFunction.CRYPT_FUNCTIONS.contains(registeredFunction)) {
                 Term keyLabel = this.compose(function.getKey());
-                // if function requires key to analyze but key cannot be composed, continue
+                // if key cannot be composed, continue
                 if (keyLabel == null) {
                     this.labelsHold.add(label);
                     continue;
@@ -101,26 +122,37 @@ public class Frame extends AST {
                 Pair<Term, Boolean> addedMessage = this.add(args.getLast());
                 checks.add(new Check(addedMessage.b, addedMessage.a, new Function(registeredFunction.destructor,
                         List.of(keyLabel, new Constant(label)))));
-            } else if (registeredFunction.keyed) {
+            }
+            // if function includes key
+            else if (registeredFunction.keyed) {
                 Pair<Term, Boolean> addedMessage = this.add(args.getLast());
                 checks.add(new Check(addedMessage.b, addedMessage.a, new Function(registeredFunction.destructor,
                         List.of(new Constant(label)))));
-            } else if (registeredFunction.equals(RegisteredFunction.PAIR)) {
+            }
+            // if function is a pair
+            else if (registeredFunction.equals(RegisteredFunction.PAIR)) {
                 for (int i = 0; i < args.size(); i++) {
                     Pair<Term, Boolean> addedTerm = this.add(args.get(i));
                     checks.add(new Check(addedTerm.b, addedTerm.a,
                             new Function(registeredFunction.destructor + (i + 1), List.of(new Constant(label)))));
                 }
-            } else {
+            }
+            // if function is any other registered function (has one arg)
+            else {
                 Pair<Term, Boolean> addedTerm = this.add(args.getFirst());
                 checks.add(new Check(addedTerm.b, addedTerm.a,
                         new Function(registeredFunction.destructor, List.of(new Constant(label)))));
             }
             this.labelsDone.add(label);
         }
-        return checks.stream().sorted((check1, check2) -> check1.isAssignment.equals(check2.isAssignment) ? 0 : check1.isAssignment ? -1 : 1).toList();
+        // return sorted checks (assignment checks first since if/equal checks may depend on them)
+        return checks.stream().sorted((a, b) -> a.isAssignment.equals(b.isAssignment) ? 0 : a.isAssignment ? -1 : 1).toList();
     }
 
+    /**
+     * Generates a new label
+     * @return new string label
+     */
     private String getLabel() {
         // TODO: perhaps a value based ID is needed for uniqueness across frames, e.g. label of crypt(pk(B),pair(msg,M)) is _crypt_pk_B_pair_msg_M
         return "l" + this.counter++;

@@ -16,6 +16,9 @@ public class ChoiceCheckNode {
         this.agentPair = agentPair;
     }
 
+    /**
+     * This constructor is used to mark root nodes
+     */
     public ChoiceCheckNode() {
         this.check = null;
         this.agentPair = null;

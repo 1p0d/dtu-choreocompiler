@@ -1,12 +1,17 @@
 import org.antlr.v4.runtime.misc.Pair;
+
 import java.util.*;
 
 public class Environment {
     public String currentAgent;
 
-    public Environment() {
-    }
+    public Environment() {}
 
+    /**
+     * Compiles a map of agent pairs extracted from a choreography to a local behavior
+     * @param agentPairsMap Map of agents that each have a list of pairs with a frame and belonging choreo
+     * @return Map of agents to their translations
+     */
     public Map<String, String> compile(Map<String, List<Pair<Frame, Choreo>>> agentPairsMap) {
         Map<String, String> agentTranslations = new HashMap<>();
         agentPairsMap.forEach((agent, value) -> {
@@ -21,6 +26,14 @@ public class Environment {
         return agentTranslations;
     }
 
+    /**
+     * Compile an agent with their agent pairs extracted from a choreography to a local behavior
+     * @param agent Name of agent
+     * @param incomingAgentPairs List of pairs with a frame and belonging choreo
+     * @param translation Translation string that is passed recursively
+     * @param depth Counter of depth passed recursively used for indentation
+     * @return Translation string
+     */
     public String compileAgent(String agent, List<Pair<Frame, Choreo>> incomingAgentPairs, String translation, Integer depth) {
         if (agent == null || agent.isBlank() || incomingAgentPairs == null || incomingAgentPairs.isEmpty())
             return translation;
@@ -123,8 +136,7 @@ public class Environment {
                 for (Check check : checks)
                     node = node.addChild(new Node<>(new ChoiceCheckNode(check)));
                 if (agentPair == null) continue;
-                Node<ChoiceCheckNode> newNode = new Node<>(new ChoiceCheckNode(agentPair));
-                node.addChild(newNode);
+                node.addChild(new Node<>(new ChoiceCheckNode(agentPair)));
             }
             // render tree
             return translationBuilder.append(renderNodes(agent, root.children, depth)).toString();
@@ -132,23 +144,33 @@ public class Environment {
         throw new Error("The specification is ill-defined: It did not match any expectations");
     }
 
-    public String renderNodes(String agent, Set<Node<ChoiceCheckNode>> nodes, Integer depth) {
+    /**
+     * Internal method used to render checks and choices recursively
+     * @param agent Name of agent
+     * @param nodes Set of nodes supposed to position a check or choice
+     * @param depth Counter of depth passed recursively used for indentation
+     * @return Translation string
+     */
+    private String renderNodes(String agent, Set<Node<ChoiceCheckNode>> nodes, Integer depth) {
         if (nodes.isEmpty()) return "";
         StringBuilder sb = new StringBuilder();
+        // get only nodes that contain checks
         List<Node<ChoiceCheckNode>> checkNodes = nodes.stream().filter(node -> node.payload.check != null).toList();
+        // first append all nodes that contain choices on this level
         sb.append(this.compileAgent(agent, nodes.stream().filter(node -> node.payload.agentPair != null)
                 .map(node -> node.payload.agentPair).toList(), "", depth));
+        // then render all check nodes that their children recursively
         for (int i = 0; i < checkNodes.size(); i++) {
             Node<ChoiceCheckNode> checkNode = checkNodes.get(i);
             Check check = checkNode.payload.check;
             sb.append("\t".repeat(depth + i)).append(check.isAssignment ? "try " : "if ")
                     .append(check.left.compile(this)).append(" = ").append(check.right.compile(this))
-                    .append(" ").append(check.isAssignment ? "do" : "then").append("\n");
-            sb.append(renderNodes(agent, checkNode.children, depth + 1));
-            if (i < checkNodes.size() - 1)
-                sb.append("\t".repeat(depth + i)).append(check.isAssignment ? "catch" : "else").append("\n");
-            else
-                sb.append("\t".repeat(depth + i)).append(check.isAssignment ? "catch" : "else").append(" 0\n");
+                    .append(" ").append(check.isAssignment ? "do" : "then").append("\n")
+                    .append(renderNodes(agent, checkNode.children, depth + 1))
+                    .append("\t".repeat(depth + i)).append(check.isAssignment ? "catch" : "else");
+            if (i == checkNodes.size() - 1)
+                sb.append(" 0");
+            sb.append("\n");
         }
         return sb.toString();
     }
