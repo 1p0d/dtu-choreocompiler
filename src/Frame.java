@@ -87,8 +87,6 @@ public class Frame extends AST {
         return null;
     }
 
-    // instead of adding the arg and resuming
-
     /**
      * Analyzes all labels in labelsNew
      * @return List of Checks that are required for all new labels
@@ -112,7 +110,7 @@ public class Frame extends AST {
             }
             List<Term> args = function.getContent();
             // if function requires key to analyze
-            if (RegisteredFunction.CRYPT_FUNCTIONS.contains(registeredFunction)) {
+            if (RegisteredFunction.CRYPT_FUNCTIONS.contains(registeredFunction) || registeredFunction.equals(RegisteredFunction.SIGN)) {
                 Term keyLabel = this.compose(function.getKey());
                 // if key cannot be composed, continue
                 if (keyLabel == null) {
@@ -123,8 +121,8 @@ public class Frame extends AST {
                 checks.add(new Check(addedMessage.b, addedMessage.a, new Function(registeredFunction.destructor,
                         List.of(keyLabel, new Constant(label)))));
             }
-            // if function includes key
-            else if (registeredFunction.keyed) {
+            // if function has key
+            else if (registeredFunction.hasKey) {
                 Pair<Term, Boolean> addedMessage = this.add(args.getLast());
                 checks.add(new Check(addedMessage.b, addedMessage.a, new Function(registeredFunction.destructor,
                         List.of(new Constant(label)))));

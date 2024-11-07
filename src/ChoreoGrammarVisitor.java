@@ -84,7 +84,6 @@ public class ChoreoGrammarVisitor extends ChoreoBaseVisitor<AST> {
 
     @Override
     public AST visitContinuation(ChoreoParser.ContinuationContext ctx) {
-        if (ctx.c == null) return new Choice((Term) visit(ctx.t));
         return new Choice((Term) visit(ctx.t), (Choreo) visit(ctx.c));
     }
 

@@ -2,19 +2,24 @@ Local behavior for agent A:
 A: [l0] sk(A,s), [l1] A, [l2] s, [l3] B, [l4] msg, [l5] upd.
 var [l6] M.
 var [l7] K.
-send(pair(crypt(pk(l3),pair(l4,l6)),mac(l0,crypt(pk(l3),pair(l4,l6)))) +
-	pair(crypt(pk(l3),pair(l5,l7)),mac(l0,crypt(pk(l3),pair(l5,l7))))).
+send(pair(crypt(pk(l3),pair(l4,l6)),mac(l0,crypt(pk(l3),pair(l4,l6))))).
+	0
++
+send(pair(crypt(pk(l3),pair(l5,l7)),mac(l0,crypt(pk(l3),pair(l5,l7))))).
+	0
 
 
 Local behavior for agent B:
 B: [l0] A, [l1] s, [l2] B, [l3] inv(pk(B)), [l4] msg, [l5] upd.
 receive(l6).
-try l7 = dsign(l6) do
+try l7 = dsign(pk(l1),l6) do
 	try l8 = dcrypt(l3,l7) do
 		try l9 = π2(l8) do
 			if l4 = π1(l8) then
+				0
 			else
 				if l5 = π1(l8) then
+					0
 				else 0
 		catch 0
 	catch 0
@@ -27,5 +32,8 @@ receive(l7).
 try l8 = π1(l7) do
 	if mac(l0,l8) = π2(l7) then
 		send(sign(l6,l8)).
+			0
+		send(sign(l6,l8)).
+			0
 	else 0
 catch 0
