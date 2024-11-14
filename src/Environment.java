@@ -38,7 +38,7 @@ public class Environment {
      */
     public String compileAgent(String agent, List<Pair<Frame, Choreo>> incomingAgentPairs, Integer depth) {
         if (agent == null || agent.isBlank() || incomingAgentPairs == null || incomingAgentPairs.isEmpty())
-            throw new Error("The specification is ill-defined: It did not match any expectations.");
+            AST.error("The specification is ill-defined. It did not match any expectations.");
         List<Pair<Frame, Choreo>> agentPairs = new ArrayList<>(incomingAgentPairs);
         ListIterator<Pair<Frame, Choreo>> listIterator = agentPairs.listIterator();
         // remove pairs that the agent is not part of
@@ -65,7 +65,7 @@ public class Environment {
                 }
             }
         }
-        if (agentPairs.isEmpty()) throw new Error("The specification is ill-defined: No matching pairs for agent " + agent + " left.");
+        if (agentPairs.isEmpty()) AST.error("The specification is ill-defined. No matching pairs for agent " + agent + " left.");
         StringBuilder translationBuilder = new StringBuilder();
         List<Pair<Frame, Choreo>> newAgentPairs = new ArrayList<>();
         // all choreos are 0
@@ -117,7 +117,7 @@ public class Environment {
                     Term addedMessageLabel = choiceFrame.add(choice.message).a;
                     if (label == null) label = addedMessageLabel;
                     else if (!label.equals(addedMessageLabel))
-                        throw new Error("Compilation error: Frame generated unexpected label for received message. " +
+                        AST.error("Frame generated unexpected label for received message. " +
                                 "Expected: " + label + ". Got: " + addedMessageLabel + ".");
                     choicesChecks.add(new Pair<>(
                             new Pair<>(choiceFrame, choice.choreography), choiceFrame.analyze()));
@@ -139,7 +139,8 @@ public class Environment {
             // render tree
             return translationBuilder.append(renderNodes(agent, root.children, depth)).toString();
         }
-        throw new Error("The specification is ill-defined: It did not match any expectations.");
+        AST.error("The specification is ill-defined. It did not match any expectations.");
+        return null;
     }
 
     /**
