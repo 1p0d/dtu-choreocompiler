@@ -114,7 +114,7 @@ public class Environment {
                 for (int j = 0; j < message.choices.size(); j++) {
                     Choice choice = message.choices.get(j);
                     Frame choiceFrame = new Frame(pair.a);
-                    Term addedMessageLabel = choiceFrame.add(choice.message).a;
+                    Term addedMessageLabel = choiceFrame.add(choice.message, message.label).a;
                     if (label == null) label = addedMessageLabel;
                     else if (!label.equals(addedMessageLabel))
                         AST.error("Frame generated unexpected label for received message. " +
