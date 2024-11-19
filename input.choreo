@@ -4,6 +4,6 @@ B: A,s,B, pk(B), inv(pk(B)), pk(s), msg, upd.
 
 A: new M, K. A -> s:
     ([crypt(pk(B),pair(msg,M))]sk(A,s).
-    s -> B: sign(inv(pk(s)),crypt(pk(B),pair(msg,M))).0)
+    s -> B: sign(inv(pk(s)),crypt(pk(B),pair(msg,M))))
  +  ([crypt(pk(B),pair(upd,K))]sk(A,s).
-    s -> B: sign(inv(pk(s)),crypt(pk(B),pair(upd,K))).0)
+    s -> B: sign(inv(pk(s)),crypt(pk(B),pair(upd,K))))

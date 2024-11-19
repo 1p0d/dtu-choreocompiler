@@ -93,8 +93,8 @@ public class ChoreoGrammarVisitor extends ChoreoBaseVisitor<AST> {
 
     @Override
     public AST visitContinuation(ChoreoParser.ContinuationContext ctx) {
-        if (ctx.t == null || ctx.c == null) AST.error("Grammar rule Continuation violated.");
-        return new Choice((Term) visit(ctx.t), (Choreo) visit(ctx.c));
+        if (ctx.t == null) AST.error("Grammar rule Continuation violated.");
+        return new Choice((Term) visit(ctx.t), ctx.c != null ? (Choreo) visit(ctx.c) : new Empty());
     }
 
     @Override
