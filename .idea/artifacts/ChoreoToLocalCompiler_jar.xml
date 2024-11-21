@@ -1,0 +1,9 @@
+<component name="ArtifactManager">
+  <artifact type="jar" name="ChoreoToLocalCompiler:jar">
+    <output-path>$PROJECT_DIR$/out/artifacts/ChoreoToLocalCompiler_jar</output-path>
+    <root id="archive" name="ChoreoToLocalCompiler.jar">
+      <element id="module-output" name="ChoreoToLocalCompiler" />
+      <element id="extracted-dir" path="$PROJECT_DIR$/../../../../Program Files/ANTLR/antlr-4.13.2-complete.jar" path-in-jar="/" />
+    </root>
+  </artifact>
+</component>

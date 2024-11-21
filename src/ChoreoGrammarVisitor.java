@@ -7,6 +7,7 @@ public class ChoreoGrammarVisitor extends ChoreoBaseVisitor<AST> {
     /* ---------- start ---------- */
 
     public AST visitStart(ChoreoParser.StartContext ctx) {
+        if (ctx.ks == null || ctx.c == null) AST.error("Grammar rule start violated.");
         Choreo choreo = (Choreo) visit(ctx.c);
         List<Knowledge> knowledges = new ArrayList<>();
         ctx.ks.forEach(k -> knowledges.add((Knowledge) visit(k)));
@@ -16,6 +17,7 @@ public class ChoreoGrammarVisitor extends ChoreoBaseVisitor<AST> {
     /* ---------- knwl ---------- */
 
     public AST visitKnowledge(ChoreoParser.KnowledgeContext ctx) {
+        if (ctx.a == null || ctx.ts == null) AST.error("Grammar rule Knowledge violated.");
         String agent = ctx.a.getText();
         List<Term> terms = new ArrayList<>();
         for (ChoreoParser.TermContext c : ctx.ts) {
@@ -28,6 +30,7 @@ public class ChoreoGrammarVisitor extends ChoreoBaseVisitor<AST> {
 
     @Override
     public AST visitFunction(ChoreoParser.FunctionContext ctx) {
+        if (ctx.f == null || ctx.as == null) AST.error("Grammar rule Function violated.");
         List<Term> args = new ArrayList<>();
         for (ChoreoParser.TermContext arc : ctx.as) {
             args.add((Term) visit(arc));
@@ -37,11 +40,13 @@ public class ChoreoGrammarVisitor extends ChoreoBaseVisitor<AST> {
 
     @Override
     public AST visitConstant(ChoreoParser.ConstantContext ctx) {
+        if (ctx.x == null) AST.error("Grammar rule Constant violated.");
         return new Constant(ctx.x.getText());
     }
 
     @Override
     public AST visitMAC(ChoreoParser.MACContext ctx) {
+        if (ctx.k == null || ctx.m == null) AST.error("Grammar rule MAC violated.");
         Term key = (Term) visit(ctx.k);
         Term message = (Term) visit(ctx.m);
         return new Function(RegisteredFunction.PAIR.name, List.of(message,
@@ -50,6 +55,7 @@ public class ChoreoGrammarVisitor extends ChoreoBaseVisitor<AST> {
 
     @Override
     public AST visitTermParen(ChoreoParser.TermParenContext ctx) {
+        if (ctx.m == null) AST.error("Grammar rule TermParen violated.");
         return visit(ctx.m);
     }
 
@@ -62,6 +68,7 @@ public class ChoreoGrammarVisitor extends ChoreoBaseVisitor<AST> {
 
     @Override
     public AST visitMessage(ChoreoParser.MessageContext ctx) {
+        if (ctx.a == null || ctx.b == null || ctx.chs == null) AST.error("Grammar rule Message violated.");
         List<Choice> choices = new ArrayList<>();
         for (ChoreoParser.ChoiceContext ch : ctx.chs)
             choices.add((Choice) visit(ch));
@@ -71,12 +78,14 @@ public class ChoreoGrammarVisitor extends ChoreoBaseVisitor<AST> {
 
     @Override
     public AST visitDefinition(ChoreoParser.DefinitionContext ctx) {
+        if (ctx.a == null || ctx.vars == null || ctx.c == null) AST.error("Grammar rule Definition violated.");
         return new Definition(ctx.a.getText(), ctx.vars.stream()
                 .map(var -> new Constant(var.getText())).toList(), (Choreo) visit(ctx.c));
     }
 
     @Override
     public AST visitChoreoParen(ChoreoParser.ChoreoParenContext ctx) {
+        if (ctx.c == null) AST.error("Grammar rule ChoreoParen violated.");
         return visit(ctx.c);
     }
 
@@ -84,12 +93,13 @@ public class ChoreoGrammarVisitor extends ChoreoBaseVisitor<AST> {
 
     @Override
     public AST visitContinuation(ChoreoParser.ContinuationContext ctx) {
-        if (ctx.c == null) return new Choice((Term) visit(ctx.t));
-        return new Choice((Term) visit(ctx.t), (Choreo) visit(ctx.c));
+        if (ctx.t == null) AST.error("Grammar rule Continuation violated.");
+        return new Choice((Term) visit(ctx.t), ctx.c != null ? (Choreo) visit(ctx.c) : new Empty());
     }
 
     @Override
     public AST visitChoiceParen(ChoreoParser.ChoiceParenContext ctx) {
+        if (ctx.ch == null) AST.error("Grammar rule ChoiceParen violated.");
         return visit(ctx.ch);
     }
 }

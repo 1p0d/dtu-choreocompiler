@@ -71,10 +71,16 @@ class Function extends Term {
     @Override
     public Term getKey() {
         RegisteredFunction registeredFunction = RegisteredFunction.getRegisteredFunction(this.name);
-        if (registeredFunction != null && registeredFunction.keyed)
-            return this.name.equals(RegisteredFunction.CRYPT.name) ?
-                    new Function(RegisteredFunction.INV.name, this.args.subList(0, 1)) : this.args.getFirst();
-        return null;
+        if (registeredFunction == null || !registeredFunction.hasKey) return null;
+        switch (registeredFunction) {
+            case RegisteredFunction.CRYPT:
+                return new Function(RegisteredFunction.INV.name, this.args.subList(0, 1));
+            case RegisteredFunction.SIGN:
+                if (this.args.getFirst() instanceof Function function && function.name.equals(RegisteredFunction.INV.name) && !function.args.isEmpty())
+                    return function.args.getFirst();
+            default:
+                return this.args.getFirst();
+        }
     }
 
     @Override

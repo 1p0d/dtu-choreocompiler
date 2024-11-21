@@ -2,8 +2,8 @@ A: sk(A,s), A,s,B, pk(B), msg, upd.
 s: sk(A,s), A,s,B, pk(B), msg, upd, pk(s), inv(pk(s)).
 B: A,s,B, pk(B), inv(pk(B)), pk(s), msg, upd.
 
-(A: new M, K. A -> s: l
+A: new M, K. A -> s:
     ([crypt(pk(B),pair(msg,M))]sk(A,s).
-    s -> B: l1 sign(inv(pk(s)),crypt(pk(B),pair(msg,M))))
+    s -> B: sign(inv(pk(s)),crypt(pk(B),pair(msg,M))).0)
  +  ([crypt(pk(B),pair(upd,K))]sk(A,s).
-    s -> B: l1 sign(inv(pk(s)),crypt(pk(B),pair(upd,K)))))
+    s -> B: sign(inv(pk(s)),crypt(pk(B),pair(upd,K))).0)

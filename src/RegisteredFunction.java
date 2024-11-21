@@ -15,17 +15,17 @@ public enum RegisteredFunction {
     final String destructor;
     final boolean global;
     final boolean analyzable;
-    final boolean keyed;
+    final boolean hasKey;
 
     static final List<RegisteredFunction> CRYPT_FUNCTIONS = List.of(CRYPT, SCRYPT);
 
-    RegisteredFunction(String name, String verifier, String destructor, boolean global, boolean analyzable, boolean keyed) {
+    RegisteredFunction(String name, String verifier, String destructor, boolean global, boolean analyzable, boolean hasKey) {
         this.name = name;
         this.verifier = verifier;
         this.destructor = destructor;
         this.analyzable = analyzable;
         this.global = global;
-        this.keyed = keyed;
+        this.hasKey = hasKey;
     }
 
     static RegisteredFunction getRegisteredFunction(String name) {
