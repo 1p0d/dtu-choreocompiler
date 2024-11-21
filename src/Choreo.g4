@@ -27,7 +27,7 @@ term: f=IDENT '(' as+=term (',' as+=term)* ')'                              # Fu
     ;
 
 choice
-    : t=term '.' (c=choreo)?                                                # Continuation
+    : t=term ('.' c=choreo)?                                                # Continuation
     | '(' ch=choice ')'                                                     # ChoiceParen
     ;
 
