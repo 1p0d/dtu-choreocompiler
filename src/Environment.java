@@ -96,16 +96,19 @@ public class Environment {
         if (agentPairs.stream().allMatch(pair -> pair.b instanceof Message message && message.agentFrom.equals(agent) &&
                 message.choices.size() == ((Message) agentPairs.getFirst().b).choices.size() &&
                 message.choices.stream().allMatch(choice -> pair.a.compose(choice.message) != null))) {
-            for (Pair<Frame, Choreo> pair : agentPairs) {
+            for (int i = 0; i < agentPairs.size(); i++) {
+                Pair<Frame, Choreo> pair = agentPairs.get(i);
                 Frame frame = pair.a;
                 Message message = (Message) pair.b;
-                for (int i = 0; i < message.choices.size(); i++) {
-                    Choice choice = message.choices.get(i);
+                for (int j = 0; j < message.choices.size(); j++) {
+                    Choice choice = message.choices.get(j);
                     translationBuilder.append("\t".repeat(depth)).append("send(").append(frame.compose(choice.message).compile(this)).append(").\n")
                             .append(this.compileAgent(agent, List.of(new Pair<>(frame, choice.choreography)), depth + 1));
-                    if (i < message.choices.size() - 1)
+                    if (j < message.choices.size() - 1)
                         translationBuilder.append("\t".repeat(depth)).append("+\n");
                 }
+                if (i < agentPairs.size() - 1)
+                    translationBuilder.append("\t".repeat(depth)).append("+\n");
             }
             return translationBuilder.toString();
         }
